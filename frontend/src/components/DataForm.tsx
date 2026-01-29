@@ -14,9 +14,10 @@ interface FormData {
 
 interface DataFormProps {
     onSubmit?: (data: any) => void; // Changed to 'any' because the output structure is different from internal state
+    onFileSelect?: (data: any) => void; // Changed to 'any' because the output structure is different from internal state
 }
 
-export const DataForm: React.FC<DataFormProps> = ({ onSubmit }) => {
+export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) => {
     const [formData, setFormData] = useState<FormData>({
         pvPower: '',
         pvConsumed: '',
@@ -38,6 +39,10 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit }) => {
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
         setFormData({ ...formData, file });
+
+        if (file && onFileSelect) {
+            onFileSelect(file);
+        }
     };
 
     const handleGridFee = (data: any) => {

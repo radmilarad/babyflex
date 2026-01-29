@@ -1,7 +1,7 @@
 # Energy Dashboard (Local Full Stack)
 
 ## Setup
-
+test
 ### Backend
 ```bash
 cd backend

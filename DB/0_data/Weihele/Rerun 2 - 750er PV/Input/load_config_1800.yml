@@ -1,0 +1,55 @@
+microgrid:
+  battery:
+  - model: battr_energy_1800_552     #battery model from battery database
+    init_state: 0   # Initial state of charge of the battery in kWh
+
+    # You can add more batteries here as needed
+
+  pv:
+  - annual_kwh: 675000  # Annual energy production of the PV in kWh
+    pv_is_generic: true   # Boolean to indicate if the PV is generic or not (whether to create or use specified data)
+
+    # You can add more PVs here as needed
+
+  generator:
+  - load_given: false   # Boolean to indicate if the load is given or not
+    is_step_function: false   # Boolean to indicate if the generator is a step function or not (e.g.,CHP base load)
+    max_load: 0   # Maximum load that the generator can provide in kWh
+    max_load_hourly_change: 0   # Maximum hourly change in load that the generator can provide in kWh
+    fee_per_kwh: 0.018   # Grid fee of the generator in €/kWh
+    fuel_conversion_efficiency: 0.75   # Efficiency of the generator in converting fuel to electricity
+    annual_volume_cap: 20000000   # Annual volume cap of the generator in kWh
+    init_state: 0   # Initial state of charge of the generator in kWh
+    # You can add more generators here as needed
+
+grid_parameters: 
+  no_negative_grid_load: false
+  max_abs_grid_load_pos: 186 # Maximum absolute grid load (for 15 min interval) in kWh
+  max_abs_grid_load_neg: 186
+  usage_quota_class: 1 # 1 standard, 0 if simulation validations says not optimal 
+  nev_below_gwh_grid_fee: 0.01558   # €
+  nev_above_gwh_grid_fee: 0.0005  # €
+  static_grid_fees:  # Static grid fees in € for above and below usage quota. Include (electricity tax, kwk levy, offshore levy, working price)
+  - 0.13353
+  - 0.03903
+  grid_fee_max_load_peak: # Power price above and below usage quota €
+  - 13.27
+  - 249.57
+  metering_fee: 770.0 # €
+  nev_approx_fee:
+
+time_parameters:
+  start_date: '2024-01-01 00:00:00+00:00'
+  example_start_date: '2024-06-04 00:00:00+00:00' # Example start date for the plots
+  end_date: '2024-12-31 22:00:00+00:00'
+  example_end_date: '2024-06-05 00:00:00+00:00' # Example start date for the plots
+
+use_pv_compensation: true
+pv_compensation_rate: 0.03
+pv_negative_hour_price_limit: 3
+file_price_pv_market: ../trawa_inputs/load_price_pv_market.csv
+
+do_plots: true
+create_input_files: true
+init_timestamp:
+solver_max_time_secs: 100000

@@ -1,0 +1,22 @@
+{
+  "extraction_version": "1.0",
+  "target_kpi": "peak_shaving_benefit",
+  "extractor_config": {
+    "input_sources": [
+      "direct",
+      "load_profile"
+    ],
+    "ts_extractors": [
+      "ts"
+    ],
+    "target_kpis": [
+      "peak_shaving_benefit",
+      "energy_procurement_optimization",
+      "trading_revenue"
+    ]
+  },
+  "last_updated": "2026-01-28T22:41:09.652139",
+  "feature_count": 0,
+  "feature_columns": [],
+  "num_input_features": 0
+}

@@ -1,0 +1,11 @@
+{
+  "list_battery_max_state": 100,
+  "list_battery_usability": 0.92,
+  "list_battery_usable_max_state": 92,
+  "list_battery_efficiency": 0.89,
+  "list_battery_num_annual_cycles": 280,
+  "list_battery_proportion_hourly_max_load": 0.85,
+  "pv_annual_total": 800,
+  "pv_peak_power": 50,
+  "pv_consumed_percentage": 0.8
+}

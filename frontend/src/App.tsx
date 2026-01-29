@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState } from 'react';
 import backgroundImage from './bg.webp';
 import {DataForm} from './components/DataForm';
 import {WeeklyHighResChart} from "./components/charts/WeeklyLoadConsumption";
@@ -39,7 +39,7 @@ const App = () => {
         });
 
         // Flatten
-        const flatData: ChartDataPoint[] = [];
+        const flatData = [];
         const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         let globalIndex = 0;
 
@@ -77,10 +77,12 @@ const App = () => {
         }}>
             <DataForm onSubmit={(data) => console.log("Submitting:", data)}
                       onFileSelect={handleFileSelect}/>
+
+
             <WeeklyHighResChart data={chartData}/>
 
             <div className="block w-full">
-            <BenefitWaterfall/>
+                <BenefitWaterfall/>
             </div>
         </div>
     );

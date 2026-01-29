@@ -34,6 +34,10 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
             ...formData,
             [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value,
         });
+        const file = e.target.files?.[0] || null;
+        if (file && onFileSelect) {
+            onFileSelect(file);
+        }
     };
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {

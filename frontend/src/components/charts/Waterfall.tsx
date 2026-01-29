@@ -8,11 +8,11 @@ const raw = {
     trading: 294384
 };
 
-const BenefitWaterfall = ({ graphData = raw }) => {
+const BenefitWaterfall = ({ data }) => {
 
-    const step1_end = raw.peak;
-    const step2_end = step1_end + raw.procurement;
-    const step3_end = step2_end + raw.trading;
+    const step1_end = data.peak;
+    const step2_end = step1_end + data.procurement;
+    const step3_end = step2_end + data.trading;
 
     // 2. Data Series
     const series = [

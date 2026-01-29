@@ -9,9 +9,10 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
     const [results, setResults] = useState<any[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // Local state to display prices INSIDE this component
     const [gridFee, setGridFee] = useState<{ arbeitspreis: number | null; leistungspreis: number | null } | null>(null);
 
-    // Ref to track if we are currently clicking a dropdown item to prevent onBlur conflict
     const isSelectingRef = useRef(false);
 
     useEffect(() => {
@@ -23,7 +24,6 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
             setLoading(true);
 
             try {
-                // Using Photon (fast)
                 const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=de`;
                 const res = await fetch(url, { signal });
                 const data = await res.json();
@@ -43,10 +43,9 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
         };
     }, [query]);
 
-    // ⚡ Reusable function to fetch backend data
     const fetchGridData = async (postCode: string, city: string, street: string, houseNumber: string) => {
         try {
-            // Clear old data while loading new data
+            // Reset old data to show we are loading new
             setGridFee(null);
 
             const params = new URLSearchParams({
@@ -58,40 +57,54 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
                 maxPeak: "50",
             });
 
-            const res = await fetch(`http://127.0.0.1:8000/api/enet-gridfee?${params.toString()}`);
+            console.log("📡 Fetching Grid Data for:", params.toString());
+
+            const res = await fetch(`http://localhost:8000/api/enet-gridfee?${params.toString()}`);
+
+            if (!res.ok) {
+                console.error("API Error Status:", res.status);
+                return;
+            }
+
             const data = await res.json();
+            console.log("📦 API Response:", data);
 
             if (data.error) {
                 console.error("Grid fee API error:", data);
             } else {
-                // Extract only what we need
                 const prices = data.spezifischePreise || [];
+
+                // Ensure we find the correct types
                 const apObj = prices.find((p: any) => p.typ === "ARBEITSPREIS_WIRKARBEIT");
                 const lpObj = prices.find((p: any) => p.typ === "LEISTUNGSPREIS_WIRKLEISTUNG");
 
                 const extractedData = {
-                    arbeitspreis: apObj ? apObj.wert : null,
-                    leistungspreis: lpObj ? lpObj.wert : null
+                    arbeitspreis: apObj ? Number(apObj.wert) : 0,
+                    leistungspreis: lpObj ? Number(lpObj.wert) : 0
                 };
 
-                console.log("✅ Fetched Grid Fee:", extractedData);
+                console.log("✅ Extracted Data:", extractedData);
+
+                // 1. Update LOCAL state (for the UI boxes)
                 setGridFee(extractedData);
-                onGridFeeFetched?.(extractedData);
+
+                // 2. Notify PARENT (for the form submission)
+                if (onGridFeeFetched) {
+                    onGridFeeFetched(extractedData);
+                }
             }
         } catch (err) {
-            console.error("Error fetching grid fee data:", err);
+            console.error("❌ Error fetching grid fee data:", err);
         }
     };
 
-    // 🧩 Central logic to parse a Photon result and trigger fetch
     const selectAddress = (result: any) => {
         const props = result.properties;
-        const displayName = `${props.name || ''}, ${props.street || ''} ${props.housenumber || ''}, ${props.city || props.town || ''}`;
+        const displayName = `${props.name || props.street || ''} ${props.housenumber || ''}, ${props.postcode || ''} ${props.city || props.town || ''}`;
 
         setQuery(displayName);
         setShowDropdown(false);
 
-        // Normalize data
         const postCode = props.postcode || "";
         const city = props.city || props.town || props.village || "";
         const street = props.street || props.name || "";
@@ -100,75 +113,50 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
         fetchGridData(postCode, city, street, houseNumber);
     };
 
-    // 🖱️ Event: User types manually
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setQuery(e.target.value);
-        // Important: Clear old result when user edits text
-        if (gridFee) setGridFee(null);
-    };
-
-    // 🖱️ Event: User clicks outside (Blur) or hits Enter
     const handleBlur = () => {
-        // Allow a small delay to see if the user actually clicked the dropdown
         setTimeout(() => {
-            if (isSelectingRef.current) return; // Addressed handled by onMouseDown
-
-            // If user leaves field, has results, but no gridFee yet -> Auto-select top result
-            if (results.length > 0 && !gridFee && query.length > 3) {
-                console.log("Blur triggered auto-select");
-                selectAddress(results[0]);
-            }
+            if (isSelectingRef.current) return;
             setShowDropdown(false);
         }, 200);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" && results.length > 0) {
-            selectAddress(results[0]);
-            e.preventDefault(); // Prevent form submit if inside a form
-        }
-    };
-
     return (
-        <div className="relative w-full mx-auto">
+        <div className="relative w-full">
             <input
                 type="text"
                 value={query}
-                onChange={handleInputChange}
+                onChange={(e) => setQuery(e.target.value)}
                 onBlur={handleBlur}
-                onKeyDown={handleKeyDown}
                 placeholder="Adresse eingeben (z.B. Musterstraße 1, Berlin)"
-                className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 outline-none transition-all"
+                className="w-full rounded-md border border-gray-200 bg-white px-4 py-2.5 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 outline-none transition-all shadow-sm sm:text-sm"
             />
 
-            {loading && <div className="absolute right-3 top-3 text-gray-400 text-sm">⏳</div>}
+            {loading && (
+                <div className="absolute right-3 top-2.5 text-gray-400 animate-spin">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                </div>
+            )}
 
             {showDropdown && results.length > 0 && (
-                <ul className="absolute z-50 bg-white border border-gray-200 rounded-md mt-1 w-full max-h-60 overflow-y-auto shadow-lg">
+                <ul className="absolute z-50 bg-white border border-gray-200 rounded-md mt-1 w-full max-h-60 overflow-y-auto shadow-xl">
                     {results.map((r, i) => (
                         <li
                             key={i}
-                            // Use onMouseDown instead of onClick to fire BEFORE onBlur
                             onMouseDown={() => {
                                 isSelectingRef.current = true;
                                 selectAddress(r);
-                                // Reset ref after a moment
                                 setTimeout(() => { isSelectingRef.current = false; }, 300);
                             }}
                             className="px-4 py-2 hover:bg-emerald-50 cursor-pointer text-sm text-gray-800 border-b border-gray-100 last:border-0"
                         >
-                            <div className="font-medium">
-                                {r.properties.name} {r.properties.housenumber}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                                {r.properties.postcode} {r.properties.city}
-                            </div>
+                            <div className="font-medium">{r.properties.name} {r.properties.housenumber}</div>
+                            <div className="text-xs text-gray-500">{r.properties.postcode} {r.properties.city}</div>
                         </li>
                     ))}
                 </ul>
             )}
 
-            {/* Result Display */}
+            {/* --- PRICE DISPLAY (Inside AddressInput now) --- */}
             {gridFee && (
                 <div className="mt-6 grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 text-center">

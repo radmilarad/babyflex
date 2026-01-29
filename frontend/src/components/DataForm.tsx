@@ -1,4 +1,5 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
+import AddressInput from "./AddressInput";
 
 interface FormData {
     value1: number | '';
@@ -54,9 +55,9 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit }) => {
                 className="w-full max-w-2xl bg-gray-50/95 backdrop-blur-sm rounded-xl p-8 sm:p-10 shadow-2xl"
             >
 
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-6">
+                <div className="grid grid-cols-1 gap-6 mb-6">
                     <div>
-                        <label htmlFor="value1" className={labelStyle}>Value 1</label>
+                        <label htmlFor="value1" className={labelStyle}>PV power</label>
                         <input
                             type="number"
                             name="value1"
@@ -68,24 +69,11 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit }) => {
                             required
                         />
                     </div>
-                    <div>
-                        <label htmlFor="value2" className={labelStyle}>Value 2</label>
-                        <input
-                            type="number"
-                            name="value2"
-                            id="value2"
-                            value={formData.value2}
-                            onChange={handleChange}
-                            className={inputStyle}
-                            placeholder="0.00"
-                            required
-                        />
-                    </div>
                 </div>
 
                 {/* Full Width: Value 3 */}
                 <div className="mb-6">
-                    <label htmlFor="value3" className={labelStyle}>Value 3</label>
+                    <label htmlFor="value3" className={labelStyle}>Battery type - make it a dropdown</label>
                     <input
                         type="number"
                         name="value3"
@@ -98,9 +86,14 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit }) => {
                     />
                 </div>
 
+                <div className="mb-6">
+                    <label htmlFor="value3" className={labelStyle}>Address</label>
+                    <AddressInput/>
+                </div>
+
                 {/* File Upload */}
                 <div className="mb-8">
-                    <label htmlFor="file" className={labelStyle}>Upload CSV Data</label>
+                <label htmlFor="file" className={labelStyle}>Upload CSV Data</label>
                     <input
                         type="file"
                         name="file"

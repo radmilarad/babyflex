@@ -8,8 +8,4 @@ DB/.env
 dist
 .idea
 
-**/database
-
-DB/database/
-
 DB/data/Web_Submission

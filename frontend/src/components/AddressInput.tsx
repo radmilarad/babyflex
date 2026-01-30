@@ -14,21 +14,35 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
     const [gridFee, setGridFee] = useState<{ arbeitspreis: number | null; leistungspreis: number | null } | null>(null);
 
     const isSelectingRef = useRef(false);
+    const ignoreFetchRef = useRef(false); // NEW: Flag to ignore fetch on selection
 
     useEffect(() => {
+        // If this update was caused by selecting an item, skip fetch
+        if (ignoreFetchRef.current) {
+            ignoreFetchRef.current = false;
+            return;
+        }
+
         const controller = new AbortController();
         const { signal } = controller;
 
         const fetchAddresses = async () => {
-            if (query.length < 3) return;
-            setLoading(true);
+            if (query.length < 3) {
+                setResults([]);
+                setShowDropdown(false);
+                return;
+            }
 
+            setLoading(true);
             try {
                 const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=de`;
                 const res = await fetch(url, { signal });
                 const data = await res.json();
-                setResults(data.features || []);
-                setShowDropdown(true);
+
+                if (!signal.aborted) {
+                    setResults(data.features || []);
+                    setShowDropdown(true); // Only open if we actually fetched new results from typing
+                }
             } catch (err: any) {
                 if (err.name !== 'AbortError') console.error(err);
             } finally {
@@ -45,20 +59,13 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
 
     const fetchGridData = async (postCode: string, city: string, street: string, houseNumber: string) => {
         try {
-            // Reset old data to show we are loading new
             setGridFee(null);
-
             const params = new URLSearchParams({
-                postCode,
-                location: city,
-                street,
-                houseNumber,
-                yearlyConsumption: "150000",
-                maxPeak: "50",
+                postCode, location: city, street, houseNumber,
+                yearlyConsumption: "150000", maxPeak: "50",
             });
 
             console.log("📡 Fetching Grid Data for:", params.toString());
-
             const res = await fetch(`http://localhost:8000/api/enet-gridfee?${params.toString()}`);
 
             if (!res.ok) {
@@ -67,14 +74,10 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
             }
 
             const data = await res.json();
-            console.log("📦 API Response:", data);
-
             if (data.error) {
                 console.error("Grid fee API error:", data);
             } else {
                 const prices = data.spezifischePreise || [];
-
-                // Ensure we find the correct types
                 const apObj = prices.find((p: any) => p.typ === "ARBEITSPREIS_WIRKARBEIT");
                 const lpObj = prices.find((p: any) => p.typ === "LEISTUNGSPREIS_WIRKLEISTUNG");
 
@@ -83,15 +86,8 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
                     leistungspreis: lpObj ? Number(lpObj.wert) : 0
                 };
 
-                console.log("✅ Extracted Data:", extractedData);
-
-                // 1. Update LOCAL state (for the UI boxes)
                 setGridFee(extractedData);
-
-                // 2. Notify PARENT (for the form submission)
-                if (onGridFeeFetched) {
-                    onGridFeeFetched(extractedData);
-                }
+                if (onGridFeeFetched) onGridFeeFetched(extractedData);
             }
         } catch (err) {
             console.error("❌ Error fetching grid fee data:", err);
@@ -99,11 +95,14 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
     };
 
     const selectAddress = (result: any) => {
+        // Prevent the useEffect from firing a new fetch
+        ignoreFetchRef.current = true;
+
         const props = result.properties;
         const displayName = `${props.name || props.street || ''} ${props.housenumber || ''}, ${props.postcode || ''} ${props.city || props.town || ''}`;
 
         setQuery(displayName);
-        setShowDropdown(false);
+        setShowDropdown(false); // Explicitly close
 
         const postCode = props.postcode || "";
         const city = props.city || props.town || props.village || "";
@@ -114,6 +113,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
     };
 
     const handleBlur = () => {
+        // Delay closing so click event on list item can fire first
         setTimeout(() => {
             if (isSelectingRef.current) return;
             setShowDropdown(false);
@@ -125,7 +125,11 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
             <input
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                    setQuery(e.target.value);
+                    // If user types, we want the dropdown to potentially open
+                    if (!showDropdown && e.target.value.length >= 3) setShowDropdown(true);
+                }}
                 onBlur={handleBlur}
                 placeholder="Adresse eingeben (z.B. Musterstraße 1, Berlin)"
                 className="w-full rounded-md border border-gray-200 bg-white px-4 py-2.5 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 outline-none transition-all shadow-sm sm:text-sm"
@@ -143,6 +147,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
                         <li
                             key={i}
                             onMouseDown={() => {
+                                // Using onMouseDown because it fires before onBlur
                                 isSelectingRef.current = true;
                                 selectAddress(r);
                                 setTimeout(() => { isSelectingRef.current = false; }, 300);
@@ -156,7 +161,6 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
                 </ul>
             )}
 
-            {/* --- PRICE DISPLAY (Inside AddressInput now) --- */}
             {gridFee && (
                 <div className="mt-6 grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100 text-center">

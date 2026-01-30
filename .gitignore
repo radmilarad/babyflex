@@ -10,6 +10,16 @@ dist
 
 **/database
 
-DB/database/
+scripts/database/
 
-DB/data/Web_Submission
+scripts/data/
+
+venv/
+env/
+.env
+__pycache__/
+*.pyc
+
+node_modules/
+dist/
+build/

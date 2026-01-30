@@ -1,20 +1,240 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Query, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from . import models, database
+from fastapi.responses import JSONResponse
+from dotenv import load_dotenv
+import pandas as pd
+import os
+import shutil
+import uuid
+import json
+import subprocess
+import sys
+import requests
+from pathlib import Path
+from datetime import date, datetime
+from dateutil.relativedelta import relativedelta
 
-models.Base.metadata.create_all(bind=database.engine)
+# -------------------------------------------------------------------
+# 🛠️ Fix Imports & Paths
+# -------------------------------------------------------------------
+# This file is in: backend/app/main.py
+# We want the root: backend/
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
-app = FastAPI()
+# Add 'backend' to python path so we can import the 'scripts' folder
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.append(str(BACKEND_ROOT))
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=['*'],
-    allow_methods=['*'],
-    allow_headers=['*'],
-)
+# Import from the scripts folder (Updated from 'DB')
+try:
+    from scripts.battery_db import BatteryDatabase
+except ImportError as e:
+    print(f"❌ Error importing BatteryDatabase: {e}")
+    print(f"ℹ️  Python Path is: {sys.path}")
+    raise e
 
-@app.get('/api/data')
-def get_data(db: Session = Depends(database.SessionLocal)):
-    results = db.query(models.EnergyRecord).all()
-    return [{'timestamp': r.timestamp, 'consumption': r.consumption, 'price': r.price} for r in results]
+# Define Paths relative to Backend Root (Updated 'DB' to 'scripts')
+PREDICTION_DIR = BACKEND_ROOT / "scripts" / "3_prediction"
+FRONTEND_DATA_DIR = PREDICTION_DIR / "frontend_data"
+INPUT_JSON_PATH = FRONTEND_DATA_DIR / "frontend_data.json"
+OUTPUT_JSON_PATH = FRONTEND_DATA_DIR / "outputs_for_frontend.json"
+DB_FILE_PATH = BACKEND_ROOT / "scripts" / "database" / "battery_simulations.duckdb"
+
+# Ensure frontend data dir exists
+FRONTEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# -------------------------------------------------------------------
+# 🔐 Load environment variables
+# -------------------------------------------------------------------
+# Load .env from backend/.env
+env_path = BACKEND_ROOT / ".env"
+load_dotenv(env_path)
+
+ENET_USERNAME = os.getenv("ENET_USERNAME")
+ENET_PASSWORD = os.getenv("ENET_PASSWORD")
+
+if not ENET_USERNAME:
+    print(f"⚠️ Warning: ENET_USERNAME not found. Checked path: {env_path}")
+
+# -------------------------------------------------------------------
+# ⚡ Enet Helper
+# -------------------------------------------------------------------
+ENET_BASE_URL = "https://ws.enet-navigator.de/netzentgelte/strom/rlm/adresse/belieferungszeitraum/jahresverbrauch"
+
+def build_enet_rlm_url(postCode, location, street, houseNumber, yearlyConsumption, maxPeak, startDate=None):
+    start = date.fromisoformat(startDate) if startDate else date.today()
+    end = (start + relativedelta(years=1)).isoformat()
+    return f"{ENET_BASE_URL}?belieferungVon={start.isoformat()}&belieferungBis={end}&plz={postCode}&ort={location}&strasse={street}&hausnummer={houseNumber}&spannungsebeneLieferung=MSP&spannungsebeneMessung=MSP&maximaleLeistung={maxPeak}&leistungsspitzeKA=true&zaehlerGruppe=ELEKTRONISCH&energieintensiv=false&privilegierterKundeNachEEG=false&tarifart=EINTARIF&jahresverbrauchHt={yearlyConsumption}&energierichtung=EINRICHTUNGSZAEHLER&kostenabgrenzung=OHNE&kommunaleAbnahmestelle=false"
+
+# -------------------------------------------------------------------
+# 🚀 App Setup
+# -------------------------------------------------------------------
+app = FastAPI(title="Trawa Flex API", version="1.4")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# Initialize DB
+# Ensure the folder for the duckdb file exists
+DB_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+db = BatteryDatabase(str(DB_FILE_PATH))
+
+# -------------------------------------------------------------------
+# 🌐 Routes
+# -------------------------------------------------------------------
+@app.get("/")
+def index(): return {"message": "✅ Trawa Flex API is running!"}
+
+@app.get("/api/health")
+def health_check(): return {"status": "ok", "pipeline_ready": PREDICTION_DIR.exists()}
+
+@app.get("/api/enet-gridfee")
+def get_enet_gridfee(
+    postCode: str, location: str, street: str, houseNumber: str,
+    yearlyConsumption: int = 100000, maxPeak: int = 30, startDate: str = date.today().isoformat()
+):
+    if not ENET_USERNAME or not ENET_PASSWORD:
+        raise HTTPException(status_code=500, detail="Enet credentials not set in .env")
+
+    url = build_enet_rlm_url(postCode, location, street, houseNumber, yearlyConsumption, maxPeak, startDate)
+    print(f"📡 Requesting Enet: {url}")
+
+    try:
+        res = requests.get(url, auth=(ENET_USERNAME, ENET_PASSWORD), timeout=15)
+
+        if res.status_code == 401:
+            raise HTTPException(status_code=401, detail="Enet Authentication failed")
+
+        res.raise_for_status()
+        return res.json()
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Enet Network Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Enet request failed: {str(e)}")
+    except Exception as e:
+        print(f"❌ Unexpected Enet Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.get("/api/simulation-timeseries")
+def get_simulation_timeseries():
+    """Returns the latest preprocessed timeseries data."""
+    if not FRONTEND_DATA_DIR.exists(): raise HTTPException(status_code=404, detail="Data directory not found")
+
+    files = list(FRONTEND_DATA_DIR.glob("*_preprocessed.csv"))
+    if not files: raise HTTPException(status_code=404, detail="No preprocessed timeseries found.")
+    target_file = sorted(files, key=lambda f: f.stat().st_mtime, reverse=True)[0]
+
+    try:
+        df = pd.read_csv(target_file)
+        if "timestamp_utc" in df.columns:
+            numeric_cols = df.select_dtypes(include=['float64']).columns
+            df[numeric_cols] = df[numeric_cols].round(2)
+            df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"]).dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        return {"filename": target_file.name, "data": df.to_dict(orient="records")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read CSV: {str(e)}")
+
+@app.post("/api/submit-simulation")
+async def submit_simulation(
+    file: UploadFile = File(...),
+    list_battery_usable_max_state: float = Form(...),
+    list_battery_num_annual_cycles: float = Form(...),
+    list_battery_proportion_hourly_max_load: float = Form(...),
+    pv_peak_power: float = Form(...),
+    pv_consumed_percentage: float = Form(...),
+    static_grid_fees: float = Form(...),
+    grid_fee_max_load_peak: float = Form(...),
+):
+    client_name, run_name = "Web_Submission", f"Run_{uuid.uuid4().hex[:8]}"
+
+    # 1. Save File
+    input_csv_path = FRONTEND_DATA_DIR / "input_load.csv"
+    try:
+        with open(input_csv_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Failed to save file: {str(e)}"})
+
+    # 2. Save Parameters
+    params = {
+        "list_battery_usable_max_state": list_battery_usable_max_state,
+        "list_battery_num_annual_cycles": list_battery_num_annual_cycles,
+        "list_battery_proportion_hourly_max_load": list_battery_proportion_hourly_max_load,
+        "pv_peak_power": pv_peak_power,
+        "pv_consumed_percentage": pv_consumed_percentage,
+        "static_grid_fees": static_grid_fees,
+        "grid_fee_max_load_peak": grid_fee_max_load_peak,
+        "pv_annual_total": pv_peak_power * 1000,
+        "working_price_eur_per_kwh": static_grid_fees,
+        "power_price_eur_per_kw": grid_fee_max_load_peak,
+        "list_battery_max_state": list_battery_usable_max_state / 0.92,
+        "list_battery_efficiency": 0.92,
+        "list_battery_usability": 0.92
+    }
+
+    with open(INPUT_JSON_PATH, "w") as f:
+        json.dump(params, f, indent=2)
+
+    # 3. Run Pipeline Scripts
+    python_exec = sys.executable
+
+    try:
+        print("🚀 Starting Prediction Pipeline...")
+
+        # Step 3a: Preprocess
+        proc_res = subprocess.run(
+            [python_exec, str(PREDICTION_DIR / "preprocess_load_and_pv.py"),
+             "--load", str(input_csv_path), "--inputs", str(INPUT_JSON_PATH)],
+            capture_output=True, text=True
+        )
+        if proc_res.returncode != 0: print(f"⚠️ Preprocessing Warning: {proc_res.stderr}")
+
+        # Step 3b: Features
+        preprocessed_csv = FRONTEND_DATA_DIR / "input_load_preprocessed.csv"
+        feat_res = subprocess.run(
+            [python_exec, str(PREDICTION_DIR / "calculate_features.py"),
+             "--input", str(preprocessed_csv), "--inputs", str(INPUT_JSON_PATH)],
+            capture_output=True, text=True
+        )
+        if feat_res.returncode != 0: print(f"⚠️ Feature Calc Warning: {feat_res.stderr}")
+
+        # Step 3c: Predict
+        pred_res = subprocess.run(
+            [python_exec, str(PREDICTION_DIR / "predict_buckets.py")],
+            capture_output=True, text=True
+        )
+
+        if pred_res.returncode == 0:
+            print("✅ Prediction script success.")
+        else:
+            print(f"⚠️ Prediction Script Failed: {pred_res.stderr}")
+            print("⚠️ Keeping existing outputs_for_frontend.json (Golden Path)")
+
+    except Exception as e:
+        print(f"❌ Pipeline Execution Error: {e}")
+
+    # 4. Read Results
+    results = {
+        "peak_shaving_benefit": 0,
+        "energy_procurement_optimization": 0,
+        "trading_revenue": 0
+    }
+
+    if OUTPUT_JSON_PATH.exists():
+        try:
+            print(f"📖 Reading results from: {OUTPUT_JSON_PATH}")
+            with open(OUTPUT_JSON_PATH, "r") as f:
+                data = json.load(f)
+                results = {k: (v if v is not None else 0) for k, v in data.items()}
+        except Exception as e:
+            print(f"❌ Error reading results: {e}")
+
+    # 5. DB Logging
+    try:
+        db.add_run(client_name, run_name, "Web Submission", params, datetime.now())
+        db.add_battery_config(client_name, run_name, f"{int(list_battery_usable_max_state)}kWh", False, list_battery_usable_max_state, list_battery_usable_max_state * list_battery_proportion_hourly_max_load)
+    except Exception: pass
+
+    return {
+        "message": "Success",
+        "run_id": run_name,
+        "results": results
+    }

@@ -85,8 +85,8 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
             pv_consumed_percentage: pvConsumedDecimal,
 
             // Grid Data (converted to Euros)
-            grid_price_work_eur: gridPriceWorkEur,
-            grid_price_capacity_eur: formData.gridData?.leistungspreis || 0, // Already in EUR usually? Check API.
+            working_price_eur_per_kwh: gridPriceWorkEur,
+            power_price_eur_per_kw: formData.gridData?.leistungspreis || 0, // Already in EUR usually? Check API.
 
             // File object (handled by separate FormData logic usually)
             file: formData.file
@@ -94,7 +94,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
 
         console.log("🚀 FINAL SUBMISSION DATA:", submissionData);
 
-        if (onSubmit) onSubmit(submissionData);
+        // if (onSubmit) onSubmit(submissionData);
     };
 
     const labelStyle = "block text-sm font-medium text-gray-700 mb-1.5";

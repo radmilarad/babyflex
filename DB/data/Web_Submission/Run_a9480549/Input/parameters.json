@@ -1,9 +1,0 @@
-{
-  "list_battery_usable_max_state": 45.0,
-  "list_battery_num_annual_cycles": 444.0,
-  "list_battery_proportion_hourly_max_load": 10.111,
-  "pv_peak_power": 4444.0,
-  "pv_consumed_percentage": 0.04,
-  "working_price_eur_per_kwh": 0.05897,
-  "power_price_eur_per_kw": 51.27
-}

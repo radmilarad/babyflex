@@ -4,11 +4,15 @@ from fastapi.responses import JSONResponse, Response
 from battery_db import BatteryDatabase
 from dotenv import load_dotenv
 import pandas as pd
+import numpy as np
 import os
 import shutil
 import uuid
 import joblib
 import requests
+import sys
+import importlib.util
+from pathlib import Path
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 
@@ -18,6 +22,40 @@ from dateutil.relativedelta import relativedelta
 load_dotenv()
 ENET_USERNAME = os.getenv("ENET_USERNAME")
 ENET_PASSWORD = os.getenv("ENET_PASSWORD")
+
+# -------------------------------------------------------------------
+# 🔗 Import Feature Extraction Logic (Dynamic Import)
+# -------------------------------------------------------------------
+# We need to import 'calculate_features.py' from '3_prediction/'
+# This ensures we use the EXACT same feature logic as the ML pipeline.
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+PREDICTION_DIR = PROJECT_ROOT / "3_prediction"
+
+# Add project root to sys.path so internal imports in calculate_features work
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    spec = importlib.util.spec_from_file_location(
+        "calculate_features",
+        PREDICTION_DIR / "calculate_features.py"
+    )
+    calc_feat_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(calc_feat_module)
+
+    # Expose functions for use
+    build_ml_input_df = calc_feat_module.build_ml_input_df
+    calculate_column_features = calc_feat_module.calculate_column_features
+    calculate_cross_features = calc_feat_module.calculate_cross_features
+
+    print("✅ Successfully imported feature extraction logic from 3_prediction")
+except Exception as e:
+    print(f"❌ Failed to import feature extraction logic: {e}")
+    # Fallback to dummy functions if import fails
+    def build_ml_input_df(df): return df
+    def calculate_column_features(df): return {}
+    def calculate_cross_features(df): return {}
 
 # -------------------------------------------------------------------
 # ⚡ Enet Helper
@@ -67,48 +105,81 @@ class MLPredictor:
             except Exception as e:
                 print(f"❌ Failed to load {target}: {e}")
 
-    def extract_features(self, df_timeseries: pd.DataFrame, params: dict) -> pd.DataFrame:
-        """Extract features matching training data requirements."""
-        if 'timestamp_utc' in df_timeseries.columns:
-            df_timeseries['timestamp_utc'] = pd.to_datetime(df_timeseries['timestamp_utc'])
-            df_timeseries.set_index('timestamp_utc', inplace=True)
+    def prepare_features(self, df_input: pd.DataFrame, params: dict) -> pd.DataFrame:
+        """
+        Prepare features using the exact logic from 3_prediction/calculate_features.py.
+        1. Preprocess DataFrame (rename columns, parse dates)
+        2. Calculate stats features
+        3. Merge with direct inputs (params)
+        """
+        # --- 1. Preprocess DataFrame ---
+        df_proc = df_input.copy()
 
-        load = df_timeseries.iloc[:, 0] if 'value' not in df_timeseries.columns else df_timeseries['value']
+        # Ensure timestamp column
+        if 'timestamp_utc' not in df_proc.columns:
+             # Fallback: assume first column is time if not named correctly
+             df_proc.columns = ['timestamp_utc', 'value']
 
-        # Mapped features to match what ML model expects
-        features = {
-            "ts__load__mean": load.mean(),
-            "ts__load__std": load.std(),
-            "ts__load__min": load.min(),
-            "ts__load__max": load.max(),
-            "ts__load__q95": load.quantile(0.95),
-            "ts__load__q05": load.quantile(0.05),
+        df_proc['timestamp_utc'] = pd.to_datetime(df_proc['timestamp_utc'], utc=True)
 
-            # Direct Inputs
-            "list_battery_usable_max_state": float(params.get("list_battery_usable_max_state", 0)),
-            "list_battery_num_annual_cycles": float(params.get("list_battery_num_annual_cycles", 0)),
-            "list_battery_proportion_hourly_max_load": float(params.get("list_battery_proportion_hourly_max_load", 0)),
-            "pv_peak_power": float(params.get("pv_peak_power", 0)),
-            "pv_consumed_percentage": float(params.get("pv_consumed_percentage", 0)),
-            "static_grid_fees": float(params.get("static_grid_fees", 0)),
-            "grid_fee_max_load_peak": float(params.get("grid_fee_max_load_peak", 0)),
-        }
-        return pd.DataFrame([features])
+        # Map input value to 'grid_load_kwh'
+        if 'value' in df_proc.columns:
+            df_proc['grid_load_kwh'] = pd.to_numeric(df_proc['value'], errors='coerce').fillna(0)
+        elif 'grid_load_kwh' not in df_proc.columns:
+             df_proc['grid_load_kwh'] = 0.0 # Should not happen if CSV is valid
+
+        # CRITICAL: Create all alias columns potentially used by extractors
+        # Your script uses 'consumption_kwh' in logic but 'consumption_load_kwh' in REQUIRED_COLUMNS.
+        # We provide both to be safe.
+        df_proc['consumption_kwh'] = df_proc['grid_load_kwh']
+        df_proc['consumption_load_kwh'] = df_proc['grid_load_kwh']
+        df_proc['pv_load_kwh'] = 0.0 # Placeholder as we don't simulate PV here for speed
+
+        # --- 2. Build ML Input (transforms to timestamp, load_kwh, etc.) ---
+        try:
+            df_ready = build_ml_input_df(df_proc)
+        except Exception as e:
+            print(f"⚠️ Feature build failed, using basic proc: {e}")
+            df_ready = df_proc
+
+        # --- 3. Calculate Derived Features ---
+        try:
+            column_feats = calculate_column_features(df_ready)
+            cross_feats = calculate_cross_features(df_ready)
+        except Exception as e:
+            print(f"⚠️ Feature calculation failed: {e}")
+            column_feats = {}
+            cross_feats = {}
+
+        # --- 4. Merge with Direct Inputs ---
+
+        # Fix: Ensure pv_annual_total exists (Model likely needs it)
+        if "pv_annual_total" not in params:
+             # Estimate roughly: peak power (kW) * 1000h (simple approximation)
+             params["pv_annual_total"] = float(params.get("pv_peak_power", 0)) * 1000
+
+        all_features = {**params, **column_feats, **cross_feats}
+
+        # Convert to DataFrame (1 row)
+        return pd.DataFrame([all_features])
 
     def predict(self, df_timeseries: pd.DataFrame, params: dict) -> dict:
         if not self.models:
             return {}
 
-        X_input = self.extract_features(df_timeseries, params)
-        results = {}
+        # Use the robust feature preparation
+        X_input = self.prepare_features(df_timeseries, params)
 
+        results = {}
         for target, model in self.models.items():
             try:
-                # Handle feature ordering/missing columns if model supports it
+                # Handle feature ordering/missing columns
                 if hasattr(model, "feature_names_in_"):
+                    # Fill missing columns with 0
                     for col in model.feature_names_in_:
                         if col not in X_input.columns:
-                            X_input[col] = 0.0 # Fill missing with 0
+                            X_input[col] = 0.0
+                    # Reorder columns strictly to match model
                     X_ready = X_input[model.feature_names_in_]
                 else:
                     X_ready = X_input
@@ -148,7 +219,10 @@ def health_check():
     return {"status": "ok", "models_loaded": list(ml_predictor.models.keys())}
 
 @app.get("/api/enet-gridfee")
-def get_enet_gridfee(postCode: str, location: str, street: str, houseNumber: str, yearlyConsumption: int = 100000, maxPeak: int = 30, startDate: str = date.today().isoformat()):
+def get_enet_gridfee(
+    postCode: str, location: str, street: str, houseNumber: str,
+    yearlyConsumption: int = 100000, maxPeak: int = 30, startDate: str = date.today().isoformat()
+):
     if not ENET_USERNAME or not ENET_PASSWORD:
         raise HTTPException(status_code=500, detail="Enet credentials not set")
     url = build_enet_rlm_url(postCode, location, street, houseNumber, yearlyConsumption, maxPeak, startDate)
@@ -169,7 +243,6 @@ async def submit_simulation(
     list_battery_proportion_hourly_max_load: float = Form(...),
     pv_peak_power: float = Form(...),
     pv_consumed_percentage: float = Form(...),
-    # UPDATED PARAMETER NAMES
     static_grid_fees: float = Form(...),
     grid_fee_max_load_peak: float = Form(...),
 ):
@@ -200,17 +273,22 @@ async def submit_simulation(
         "list_battery_proportion_hourly_max_load": list_battery_proportion_hourly_max_load,
         "pv_peak_power": pv_peak_power,
         "pv_consumed_percentage": pv_consumed_percentage,
-        "static_grid_fees": static_grid_fees,
-        "grid_fee_max_load_peak": grid_fee_max_load_peak,
+        # Keys mapped for ML model expectations
+        "working_price_eur_per_kwh": static_grid_fees,
+        "power_price_eur_per_kw": grid_fee_max_load_peak,
+        # Defaults for other params model might expect
+        "list_battery_max_state": list_battery_usable_max_state / 0.92,
+        "list_battery_efficiency": 0.92,
+        "list_battery_usability": 0.92
     }
 
     # 4. Predict
     try:
         results = ml_predictor.predict(df_input, params)
 
-        # Fallback if no ML results (e.g. models missing)
-        if not results:
-            print("⚠️ No ML results, using fallback math.")
+        # Fallback if no results
+        if not results or all(v == 0 for v in results.values()):
+            print("⚠️ ML results empty or zero, using fallback math.")
             est_load = (df_input.iloc[:,1].mean() * 8760)
             results = {
                 "peak_shaving_benefit": list_battery_usable_max_state * grid_fee_max_load_peak * 0.8,
@@ -231,6 +309,8 @@ async def submit_simulation(
 
     except Exception as e:
         print(f"Prediction error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
     return {

@@ -1,25 +1,14 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-
-// ------------------------------------------------------------------
-// COMPONENT 1: WeeklyHighResChart
-// Pure presentation component. Receives processed data.
-// ------------------------------------------------------------------
-
-export interface ChartDataPoint {
-    day: string;
-    time: string;
-    value: number;
-    globalIndex: number;
-}
+import { ChartDataPoint } from '../../types'; // Import shared type
 
 export const WeeklyHighResChart = ({ data }: { data: ChartDataPoint[] | null }) => {
     if (!data || data.length === 0) return null;
 
     // Visualization Config
-    const dayTicks = [48, 144, 240, 336, 432, 528, 624]; // Center of each day (0-96)
+    const dayTicks = [48, 144, 240, 336, 432, 528, 624];
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const boundaries = [0, 96, 192, 288, 384, 480, 576, 672]; // Vertical grid lines
+    const boundaries = [0, 96, 192, 288, 384, 480, 576, 672];
 
     const formatXAxis = (tickItem: number) => {
         const index = dayTicks.indexOf(tickItem);
@@ -28,6 +17,7 @@ export const WeeklyHighResChart = ({ data }: { data: ChartDataPoint[] | null }) 
 
     return (
         <div className="w-full max-w-4xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* ... keeping your existing JSX ... */}
             <div className="bg-white rounded-md border border-gray-200 p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-6">
                     <div>
@@ -47,7 +37,6 @@ export const WeeklyHighResChart = ({ data }: { data: ChartDataPoint[] | null }) 
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
 
-                            {/* Vertical Separators for Days */}
                             {boundaries.map((x) => (
                                 <ReferenceLine key={x} x={x} stroke="#e5e7eb" strokeDasharray="3 3" />
                             ))}
@@ -70,7 +59,7 @@ export const WeeklyHighResChart = ({ data }: { data: ChartDataPoint[] | null }) 
                             <Tooltip
                                 content={({ active, payload }) => {
                                     if (active && payload && payload.length) {
-                                        const d = payload[0].payload;
+                                        const d = payload[0].payload as ChartDataPoint;
                                         return (
                                             <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-gray-800">
                                                 <div className="font-semibold text-gray-300 mb-1">{d.day} • {d.time} Uhr</div>

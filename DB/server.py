@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from battery_db import BatteryDatabase
@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import json
 import os
+import shutil
+import uuid
 import requests
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -122,6 +124,88 @@ def get_timeseries(client_name: str, run_name: str, config_name: str):
         return JSONResponse(content={"message": "No timeseries found"})
     safe_json = dataframe_to_json(df)
     return Response(content=safe_json, media_type="application/json")
+
+# -------------------------------------------------------------------
+# 📥 Submit Simulation Form & File (NEW)
+# -------------------------------------------------------------------
+@app.post("/api/submit-simulation")
+async def submit_simulation(
+    # 1. The File
+    file: UploadFile = File(...),
+
+    # 2. The Form Data (mapped to your JSON keys)
+    list_battery_usable_max_state: float = Form(...),
+    list_battery_num_annual_cycles: float = Form(...),
+    list_battery_proportion_hourly_max_load: float = Form(...),
+    pv_peak_power: float = Form(...),
+    pv_consumed_percentage: float = Form(...),
+    working_price_eur_per_kwh: float = Form(...),
+    power_price_eur_per_kw: float = Form(...),
+):
+    """
+    Accepts CSV file + simulation parameters, saves the file,
+    and triggers calculation logic.
+    """
+
+    # --- A. Save the file locally ---
+    upload_dir = "database/uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Generate unique filename to avoid overwrites
+    unique_filename = f"{uuid.uuid4()}_{file.filename}"
+    file_path = os.path.join(upload_dir, unique_filename)
+
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+
+    # --- B. Load CSV into DataFrame ---
+    try:
+        df_input = pd.read_csv(file_path)
+        if df_input.empty:
+            raise HTTPException(status_code=400, detail="Uploaded CSV is empty")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid CSV format: {str(e)}")
+
+    # --- C. Organize Parameters ---
+    simulation_params = {
+        "list_battery_usable_max_state": list_battery_usable_max_state,
+        "list_battery_num_annual_cycles": list_battery_num_annual_cycles,
+        "list_battery_proportion_hourly_max_load": list_battery_proportion_hourly_max_load,
+        "pv_peak_power": pv_peak_power,
+        "pv_consumed_percentage": pv_consumed_percentage,
+        "working_price_eur_per_kwh": working_price_eur_per_kwh,
+        "power_price_eur_per_kw": power_price_eur_per_kw,
+        "original_filename": file.filename,
+        "stored_file_path": file_path
+    }
+
+    # --- D. Perform Calculations & DB Insert ---
+    # TODO: You need to implement the specific logic in your `db` or `calc` classes.
+    # Below is a hypothetical example of how you would call it:
+
+    try:
+        # Example:
+        # 1. Insert input data into DB and get a new run_id
+        # run_id = db.create_new_simulation_run(simulation_params, df_input)
+
+        # 2. Run the calculation
+        # results = calc.perform_simulation(df_input, simulation_params)
+
+        # 3. For now, we return a success message and the params
+        pass
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Calculation failed: {str(e)}")
+
+    return {
+        "message": "Simulation submitted successfully",
+        "file_path": file_path,
+        "rows_received": len(df_input),
+        "parameters": simulation_params,
+        # "results": results.to_dict() # Uncomment when calculation logic is ready
+    }
 
 # -------------------------------------------------------------------
 # ⚡ Benefit Calculations

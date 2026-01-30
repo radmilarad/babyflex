@@ -173,6 +173,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
                 </div>
 
                 {/* Section: Battery Storage */}
+                {/* Section: Battery Storage */}
                 <div className="mb-6">
                     <div className="bg-emerald-50/50 rounded-md border border-emerald-100 p-5">
                         <div className="flex items-center gap-3 mb-5">
@@ -187,16 +188,19 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* CHANGED: grid-cols-2 -> grid-cols-3 */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                            {/* Input 1: Capacity */}
                             <div>
-                                <label htmlFor="batteryCapacity" className={labelStyle}>Max. nutzbare Kapazität</label>
+                                <label htmlFor="list_battery_usable_max_state" className={labelStyle}>Max. nutzbare Kapazität</label>
                                 <div className="relative">
                                     <span className={unitStyle}>kWh</span>
                                     <input
                                         type="number"
-                                        name="batteryCapacity"
-                                        id="batteryCapacity"
-                                        value={formData.batteryCapacity}
+                                        name="list_battery_usable_max_state"
+                                        id="list_battery_usable_max_state"
+                                        value={formData.list_battery_usable_max_state}
                                         onChange={handleChange}
                                         className={`${inputStyle} border-emerald-100 focus:border-emerald-500`}
                                         placeholder="0.00"
@@ -205,15 +209,17 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
                                     />
                                 </div>
                             </div>
+
+                            {/* Input 2: Power */}
                             <div>
-                                <label htmlFor="batteryPower" className={labelStyle}>Max. Leistung</label>
+                                <label htmlFor="list_battery_proportion_hourly_max_load" className={labelStyle}>Max. Leistung</label>
                                 <div className="relative">
                                     <span className={unitStyle}>kW</span>
                                     <input
                                         type="number"
-                                        name="batteryPower"
-                                        id="batteryPower"
-                                        value={formData.batteryPower}
+                                        name="list_battery_proportion_hourly_max_load"
+                                        id="list_battery_proportion_hourly_max_load"
+                                        value={formData.list_battery_proportion_hourly_max_load}
                                         onChange={handleChange}
                                         className={`${inputStyle} border-emerald-100 focus:border-emerald-500`}
                                         placeholder="0.00"
@@ -222,18 +228,21 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
                                     />
                                 </div>
                             </div>
-                            <div className="md:col-span-2">
-                                <label htmlFor="batteryCycles" className={labelStyle}>Max. jährliche Zyklen</label>
+
+                            {/* Input 3: Cycles (Removed 'col-span-2' wrapper) */}
+                            <div>
+                                <label htmlFor="list_battery_num_annual_cycles" className={labelStyle}>Max. jährliche Zyklen</label>
                                 <div className="relative">
-                                    <span className={unitStyle}>Cycles</span>
+                                    {/* Added 'w-16' so "Cycles" text fits nicely */}
+                                    <span className={`${unitStyle} w-16`}>Cycles</span>
                                     <input
                                         type="number"
-                                        name="batteryCycles"
-                                        id="batteryCycles"
-                                        value={formData.batteryCycles}
+                                        name="list_battery_num_annual_cycles"
+                                        id="list_battery_num_annual_cycles"
+                                        value={formData.list_battery_num_annual_cycles}
                                         onChange={handleChange}
                                         className={`${inputStyle} border-emerald-100 focus:border-emerald-500`}
-                                        style={{ paddingLeft: '4.5rem' }}
+                                        style={{ paddingLeft: '4.5rem' }} // Increased padding for wider unit label
                                         placeholder="250"
                                         min="0"
                                         required
@@ -243,6 +252,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
                         </div>
                     </div>
                 </div>
+
 
                 {/* Section: Upload */}
                 <div className="mb-8">

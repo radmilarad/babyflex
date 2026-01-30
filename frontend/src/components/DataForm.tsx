@@ -83,10 +83,9 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
             pv_consumed_percentage: pvConsumedDecimal,
 
             // Grid Data (converted to Euros)
-            working_price_eur_per_kwh: gridPriceWorkEur,
+            static_grid_fees: gridPriceWorkEur,
             // power_price_eur_per_kw expects EUR, API usually returns EUR
-            power_price_eur_per_kw: formData.gridData?.leistungspreis || 138.71,
-
+            grid_fee_max_load_peak: formData.gridData?.leistungspreis || 138.71,
             // File object passed separately by parent, but good to have here
             file: formData.file
         };

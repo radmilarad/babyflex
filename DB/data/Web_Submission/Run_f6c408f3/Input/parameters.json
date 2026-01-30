@@ -1,0 +1,9 @@
+{
+  "list_battery_usable_max_state": 444.0,
+  "list_battery_num_annual_cycles": 44.0,
+  "list_battery_proportion_hourly_max_load": 100.099,
+  "pv_peak_power": 44.0,
+  "pv_consumed_percentage": 0.45,
+  "static_grid_fees": 0.0,
+  "grid_fee_max_load_peak": 0.0
+}

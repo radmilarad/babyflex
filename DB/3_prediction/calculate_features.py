@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """
-Calculate ML features from preprocessed load/PV CSV for prediction.
-==================================================================
+Calculate ML features from frontend_data for prediction (same as 2_ml pipeline).
+================================================================================
 
-Reads preprocessed CSV from output_to_ui (e.g. load_consumption_*_preprocessed.csv)
-with columns: timestamp_utc, grid_load_kwh, consumption_kwh, pv_load_kwh.
+Reads:
+- frontend_data/frontend_data.json → direct inputs (list_battery_*, pv_*, static_grid_fees, etc.)
+- frontend_data/load_consumption_*_preprocessed.csv → timestamp_utc, grid_load_kwh, consumption_kwh, pv_load_kwh
 
 Computes the same feature set as the ML pipeline (2_ml/config.py):
-- Direct inputs from frontend_inputs.json (unchanged: battery params, pv_annual_total, etc.).
-- Column-based: stats, percentiles, custom aggregations for grid_load_kwh, consumption_kwh.
-- Cross-column: self_consumption_ratio, load_pv_correlation, temporal ratios.
+- Direct: DIRECT_INPUT_NAMES from JSON (missing → NaN).
+- Load-profile: column stats/percentiles/custom for consumption_load_kwh, pv_load_kwh (column alias consumption_kwh).
+- Cross-column: consumption_pv_pearson, consumption_da_*, etc.
+- Ratio: battery_usable_per_sum_pv, battery_usable_per_sum_consumption.
 
-Output: working_data/features.json – same feature names as training, so you can
-apply the trained model coefficients for estimation (e.g. KPI prediction).
+Output: working_data/features.json – same feature names as training, for predict_buckets.py.
 
 Usage (from DB root or 3_prediction):
   python 3_prediction/calculate_features.py
-  python 3_prediction/calculate_features.py --input output_to_ui/load_consumption_AmazonenWerkeDreyer_preprocessed.csv --output working_data/features.json
+  python 3_prediction/calculate_features.py --input frontend_data/load_consumption_X_preprocessed.csv --inputs frontend_data/frontend_data.json
 """
 from pathlib import Path
 import argparse
@@ -26,17 +27,13 @@ import sys
 import pandas as pd
 import numpy as np
 
-# Project root = DB (parent of 3_prediction)
 SCRIPT_DIR = Path(__file__).resolve().parent
 DB_ROOT = SCRIPT_DIR.parent
 if str(DB_ROOT) not in sys.path:
     sys.path.insert(0, str(DB_ROOT))
 
-# ML config and extraction logic (same as training)
 import importlib.util
-_config_spec = importlib.util.spec_from_file_location(
-    "ml_config", DB_ROOT / "2_ml" / "config.py"
-)
+_config_spec = importlib.util.spec_from_file_location("ml_config", DB_ROOT / "2_ml" / "config.py")
 ml_config = importlib.util.module_from_spec(_config_spec)
 _config_spec.loader.exec_module(ml_config)
 
@@ -47,96 +44,78 @@ ts_aggregations = importlib.util.module_from_spec(_ts_spec)
 _ts_spec.loader.exec_module(ts_aggregations)
 
 
-# -----------------------------------------------------------------------------
-# Load preprocessed CSV
-# -----------------------------------------------------------------------------
-
-REQUIRED_COLUMNS = ("timestamp_utc", "grid_load_kwh", "consumption_load_kwh", "pv_load_kwh")
+# Preprocessed CSV: consumption_kwh (preprocess_load_and_pv) or consumption_load_kwh
+REQUIRED_BASE = ("timestamp_utc", "grid_load_kwh", "pv_load_kwh")
+CONSUMPTION_COL = "consumption_kwh"  # or consumption_load_kwh
 
 
-def find_preprocessed_csv(output_dir: Path) -> Path | None:
-    """First load_consumption_*_preprocessed.csv in output_to_ui."""
-    if not output_dir.exists():
-        return None
-    candidates = sorted(output_dir.glob("load_consumption_*_preprocessed.csv"))
+def find_preprocessed_csv(dir_path: Path) -> Path | None:
+    candidates = sorted(dir_path.glob("load_consumption_*_preprocessed.csv"))
     return candidates[0] if candidates else None
 
 
 def load_preprocessed(path: Path) -> pd.DataFrame:
-    """Load preprocessed CSV; ensure required columns."""
     df = pd.read_csv(path)
-    missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
+    need = list(REQUIRED_BASE) + [CONSUMPTION_COL]
+    if CONSUMPTION_COL not in df.columns and "consumption_load_kwh" in df.columns:
+        need = list(REQUIRED_BASE) + ["consumption_load_kwh"]
+    missing = [c for c in need if c not in df.columns]
     if missing:
-        raise ValueError(
-            f"Preprocessed CSV must have columns: {REQUIRED_COLUMNS}. Missing: {missing}. Found: {list(df.columns)}"
-        )
+        raise ValueError(f"CSV must have {need}. Missing: {missing}. Found: {list(df.columns)}")
     df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
+    if "consumption_kwh" not in df.columns and "consumption_load_kwh" in df.columns:
+        df["consumption_kwh"] = df["consumption_load_kwh"]
     return df
 
 
-def build_ml_input_df(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Build DataFrame in the shape expected by ML extractors.
-    - timestamp, load_kwh, generation_kwh, grid_export_kwh for cross-features.
-    - grid_load_kwh, consumption_kwh for column specs (already present).
-    """
-    out = df[list(REQUIRED_COLUMNS)].copy()
-    out["timestamp"] = out["timestamp_utc"]
-    # load_kwh = total consumption (used by temporal + load_pv_correlation)
-    out["load_kwh"] = out["consumption_kwh"].copy()
-    # generation_kwh: PV part consumed (proxy; we don't have total PV generation)
-    out["generation_kwh"] = out["pv_load_kwh"].copy()
-    # grid_export_kwh: not in preprocessed data – placeholder 0 (self_consumption_ratio = 1 - 0/gen = 1.0)
-    out["grid_export_kwh"] = 0.0
+def build_ml_df(df: pd.DataFrame) -> pd.DataFrame:
+    """DataFrame for extractors: consumption_kwh + pv_load_kwh (same names/aliases as 2_ml)."""
+    out = df[["timestamp_utc", "consumption_kwh", "pv_load_kwh"]].copy()
+    if "grid_load_kwh" in df.columns:
+        out["grid_load_kwh"] = df["grid_load_kwh"]
     return out
 
 
-# -----------------------------------------------------------------------------
-# Feature calculation (same names as 2_ml pipeline)
-# -----------------------------------------------------------------------------
-
-def calculate_column_features(df: pd.DataFrame) -> dict[str, float]:
-    """Column-based features from LOAD_PROFILE_COLUMN_SPECS (grid_load_kwh, consumption_kwh)."""
-    features: dict[str, float] = {}
-    specs = getattr(ml_config, "LOAD_PROFILE_COLUMN_SPECS", ml_config.TIMESERIES_COLUMN_SPECS)
-    for column, spec in specs.items():
-        if column not in df.columns:
-            continue
-        feats = ts_aggregations.extract_column_features(df, column, spec)
-        features.update(feats)
-    return features
-
-
-def calculate_cross_features(df: pd.DataFrame) -> dict[str, float]:
-    """Cross-column features (self_consumption_ratio, load_pv_correlation, temporal ratios)."""
-    features: dict[str, float] = {}
-    names = getattr(ml_config, "LOAD_PROFILE_DF_FEATURE_NAMES", ml_config.TIMESERIES_DF_FEATURE_NAMES)
-    for name in names:
-        if name not in ts_aggregations.CUSTOM_DF_FEATURES:
-            features[name] = np.nan
-            continue
-        try:
-            features[name] = float(ts_aggregations.CUSTOM_DF_FEATURES[name](df))
-        except Exception:
-            features[name] = np.nan
-    return features
-
-
 def load_direct_inputs(path: Path) -> dict[str, float]:
-    """Load direct inputs from frontend_inputs.json; values unchanged, numeric for model."""
     with open(path, "r") as f:
         data = json.load(f)
+    direct_names = getattr(ml_config, "DIRECT_INPUT_NAMES", [])
     out = {}
-    for k, v in data.items():
-        if isinstance(v, (int, float)):
+    for k in direct_names:
+        v = data.get(k)
+        if v is None:
+            out[k] = np.nan
+        elif isinstance(v, (int, float)):
             out[k] = float(v)
         else:
-            out[k] = v
+            out[k] = np.nan
+    return out
+
+
+def compute_ratio_features(df: pd.DataFrame, direct: dict) -> dict[str, float]:
+    ratio_specs = getattr(ml_config, "RATIO_FEATURES", [])
+    out = {}
+    den_cols = {"pv_load_kwh": "pv_load_kwh", "consumption_load_kwh": "consumption_kwh"}
+    for spec in ratio_specs:
+        name = spec.get("name")
+        num_key = spec.get("numerator")
+        den_col = spec.get("denominator_sum_column")
+        if not name or not num_key or not den_col:
+            continue
+        col = den_cols.get(den_col, den_col)
+        if col not in df.columns:
+            out[name] = np.nan
+            continue
+        num_val = direct.get(num_key)
+        den_val = df[col].sum()
+        if pd.isna(num_val) or den_val is None or den_val == 0:
+            out[name] = np.nan
+        else:
+            out[name] = float(num_val) / float(den_val)
     return out
 
 
 def nan_to_none(obj: dict) -> dict:
-    """Replace NaN with None for JSON."""
     out = {}
     for k, v in obj.items():
         if isinstance(v, (float, np.floating)) and np.isnan(v):
@@ -149,54 +128,31 @@ def nan_to_none(obj: dict) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Calculate ML features from preprocessed load/PV CSV → features.json"
-    )
-    input_dir = SCRIPT_DIR / "output_to_ui"
-    working_dir = SCRIPT_DIR / "working_data"
-    default_input = find_preprocessed_csv(input_dir)
-    parser.add_argument(
-        "--input",
-        default=str(default_input) if default_input else None,
-        help="Preprocessed CSV path (default: first load_consumption_*_preprocessed.csv in output_to_ui)",
-    )
-    parser.add_argument(
-        "--output",
-        default=str(working_dir / "features.json"),
-        help="Output features.json path (default: working_data/features.json)",
-    )
-    default_inputs = SCRIPT_DIR / "exemplary_data" / "frontend_inputs.json"
-    parser.add_argument(
-        "--inputs",
-        default=str(default_inputs),
-        help="Direct inputs JSON (default: exemplary_data/frontend_inputs.json)",
-    )
+    parser = argparse.ArgumentParser(description="Calculate ML features from frontend_data → features.json")
+    frontend = SCRIPT_DIR / "frontend_data"
+    working = SCRIPT_DIR / "working_data"
+    default_csv = find_preprocessed_csv(frontend)
+    parser.add_argument("--input", default=str(default_csv) if default_csv else None, help="Preprocessed CSV (default: frontend_data/load_consumption_*_preprocessed.csv)")
+    parser.add_argument("--output", default=str(working / "features.json"), help="Output path (default: working_data/features.json)")
+    parser.add_argument("--inputs", default=str(frontend / "frontend_data.json"), help="Direct inputs JSON (default: frontend_data/frontend_data.json)")
     args = parser.parse_args()
 
     if not args.input or not Path(args.input).exists():
-        raise FileNotFoundError(
-            f"No preprocessed CSV found. Put one in {input_dir} or pass --input. "
-            "Run preprocess_load_and_pv.py first."
-        )
-
-    path = Path(args.input)
+        raise FileNotFoundError(f"No preprocessed CSV found. Put one in {frontend} or pass --input. Run preprocess_load_and_pv.py first.")
     inputs_path = Path(args.inputs)
     if not inputs_path.exists():
         raise FileNotFoundError(f"Inputs JSON not found: {inputs_path}")
 
-    df_raw = load_preprocessed(path)
-    df = build_ml_input_df(df_raw)
+    df_raw = load_preprocessed(Path(args.input))
+    df = build_ml_df(df_raw)
+    direct = load_direct_inputs(inputs_path)
 
-    # Direct inputs from frontend_inputs.json (unchanged)
-    direct_inputs = load_direct_inputs(inputs_path)
-    # Same feature set as ML training pipeline (load-profile derived)
-    column_features = calculate_column_features(df)
-    cross_features = calculate_cross_features(df)
-    all_features = {**direct_inputs, **column_features, **cross_features}
+    specs = getattr(ml_config, "LOAD_PROFILE_COLUMN_SPECS", ml_config.TIMESERIES_COLUMN_SPECS)
+    df_names = getattr(ml_config, "LOAD_PROFILE_DF_FEATURE_NAMES", ml_config.TIMESERIES_DF_FEATURE_NAMES)
+    column_and_df = ts_aggregations.extract_all_from_config(df, specs, df_names)
+    ratio = compute_ratio_features(df, direct)
 
-    # Optional: add pv_load_kwh–based features (placeholder for later)
-    # pv_features = {"pv_load_sum": float(df["pv_load_kwh"].sum()), ...}
-    # all_features.update(pv_features)
+    all_features = {**direct, **column_and_df, **ratio}
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)

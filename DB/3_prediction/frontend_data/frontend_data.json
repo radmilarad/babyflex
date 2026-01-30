@@ -1,9 +1,15 @@
 {
-  "list_battery_usable_max_state": 45,
-  "list_battery_num_annual_cycles": 444,
-  "list_battery_proportion_hourly_max_load": 10.111,
-  "pv_peak_power": 4444,
-  "pv_consumed_percentage": 0.04,
-  "working_price_eur_per_kwh": 0.05897,
-  "power_price_eur_per_kw": 51.27
+  "list_battery_usable_max_state": 344.0,
+  "list_battery_num_annual_cycles": 344.0,
+  "list_battery_proportion_hourly_max_load": 0.968,
+  "pv_peak_power": 34.0,
+  "pv_consumed_percentage": 0.34,
+  "static_grid_fees": 0.0,
+  "grid_fee_max_load_peak": 0.0,
+  "pv_annual_total": 34000.0,
+  "working_price_eur_per_kwh": 0.0,
+  "power_price_eur_per_kw": 0.0,
+  "list_battery_max_state": 373.9130434782609,
+  "list_battery_efficiency": 0.92,
+  "list_battery_usability": 0.92
 }

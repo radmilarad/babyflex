@@ -61,17 +61,31 @@ def index(): return {"message": "✅ Trawa Flex API is running!"}
 def health_check(): return {"status": "ok", "pipeline_ready": PREDICTION_DIR.exists()}
 
 @app.get("/api/enet-gridfee")
-def get_enet_gridfee(postCode: str, location: str, street: str, houseNumber: str, yearlyConsumption: int = 100000, maxPeak: int = 30, startDate: str = date.today().isoformat()):
-    if not ENET_USERNAME or not ENET_PASSWORD: raise HTTPException(status_code=500, detail="Enet credentials not set")
+def get_enet_gridfee(
+    postCode: str, location: str, street: str, houseNumber: str,
+    yearlyConsumption: int = 100000, maxPeak: int = 30, startDate: str = date.today().isoformat()
+):
+    if not ENET_USERNAME or not ENET_PASSWORD:
+        raise HTTPException(status_code=500, detail="Enet credentials not set in .env")
+
+    url = build_enet_rlm_url(postCode, location, street, houseNumber, yearlyConsumption, maxPeak, startDate)
+    print(f"📡 Requesting Enet: {url}")
+
     try:
-        url = build_enet_rlm_url(postCode, location, street, houseNumber, yearlyConsumption, maxPeak, startDate)
         res = requests.get(url, auth=(ENET_USERNAME, ENET_PASSWORD), timeout=15)
-        if res.status_code == 401: raise HTTPException(status_code=401, detail="Auth failed")
+
+        if res.status_code == 401:
+            raise HTTPException(status_code=401, detail="Enet Authentication failed")
+
         res.raise_for_status()
         return res.json()
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Enet Network Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Enet request failed: {str(e)}")
     except Exception as e:
-        print(f"Enet Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Enet request failed: {e}")
+        print(f"❌ Unexpected Enet Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/api/simulation-timeseries")
 def get_simulation_timeseries():
@@ -122,7 +136,7 @@ async def submit_simulation(
         "pv_consumed_percentage": pv_consumed_percentage,
         "static_grid_fees": static_grid_fees,
         "grid_fee_max_load_peak": grid_fee_max_load_peak,
-        # Required derivatives/mappings
+        # Required derivatives for scripts
         "pv_annual_total": pv_peak_power * 1000,
         "working_price_eur_per_kwh": static_grid_fees,
         "power_price_eur_per_kw": grid_fee_max_load_peak,
@@ -140,7 +154,7 @@ async def submit_simulation(
     try:
         print("🚀 Starting Prediction Pipeline...")
 
-        # Step 3a: Preprocess
+        # Step 3a: Preprocess (Creates input_load_preprocessed.csv)
         proc_res = subprocess.run(
             [python_exec, str(PREDICTION_DIR / "preprocess_load_and_pv.py"),
              "--load", str(input_csv_path), "--inputs", str(INPUT_JSON_PATH)],
@@ -148,7 +162,7 @@ async def submit_simulation(
         )
         if proc_res.returncode != 0: print(f"⚠️ Preprocessing Warning: {proc_res.stderr}")
 
-        # Step 3b: Features
+        # Step 3b: Features (Creates features.json)
         preprocessed_csv = FRONTEND_DATA_DIR / "input_load_preprocessed.csv"
         feat_res = subprocess.run(
             [python_exec, str(PREDICTION_DIR / "calculate_features.py"),
@@ -157,7 +171,7 @@ async def submit_simulation(
         )
         if feat_res.returncode != 0: print(f"⚠️ Feature Calc Warning: {feat_res.stderr}")
 
-        # Step 3c: Predict
+        # Step 3c: Predict (Creates outputs_for_frontend.json)
         pred_res = subprocess.run(
             [python_exec, str(PREDICTION_DIR / "predict_buckets.py")],
             capture_output=True, text=True
@@ -167,7 +181,7 @@ async def submit_simulation(
             print("✅ Prediction script success.")
         else:
             print(f"⚠️ Prediction Script Failed: {pred_res.stderr}")
-            print("⚠️ Keeping existing outputs_for_frontend.json")
+            print("⚠️ Keeping existing outputs_for_frontend.json (Golden Path)")
 
     except Exception as e:
         print(f"❌ Pipeline Execution Error: {e}")

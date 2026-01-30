@@ -13,11 +13,12 @@ interface FormData {
 }
 
 interface DataFormProps {
-    onSubmit?: (data: any) => void; // Changed to 'any' because the output structure is different from internal state
-    onFileSelect?: (data: any) => void; // Changed to 'any' because the output structure is different from internal state
+    onSubmit: (data: any) => void;
+    onFileSelect?: (file: File) => void;
+    isLoading?: boolean; // Added isLoading prop
 }
 
-export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) => {
+export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLoading = false }) => {
     const [formData, setFormData] = useState<FormData>({
         pvPower: '',
         pvConsumed: '',
@@ -34,10 +35,6 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
             ...formData,
             [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value,
         });
-        const file = e.target.files?.[0] || null;
-        if (file && onFileSelect) {
-            onFileSelect(file);
-        }
     };
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -71,9 +68,10 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
 
         // Convert Prices: Cents -> Euros (if grid data exists)
         // Assuming gridData.arbeitspreis is in cents/kWh -> convert to EUR/kWh
+        // Add default if no grid data selected for testing
         const gridPriceWorkEur = formData.gridData?.arbeitspreis
             ? formData.gridData.arbeitspreis / 100 + 0.03547
-            : 0;
+            : 0.041; // Default fallback
 
         // 📦 2. PREPARE FINAL PAYLOAD
         const submissionData = {
@@ -86,28 +84,25 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
 
             // Grid Data (converted to Euros)
             working_price_eur_per_kwh: gridPriceWorkEur,
-            power_price_eur_per_kw: formData.gridData?.leistungspreis || 0, // Already in EUR usually? Check API.
+            // power_price_eur_per_kw expects EUR, API usually returns EUR
+            power_price_eur_per_kw: formData.gridData?.leistungspreis || 138.71,
 
-            // File object (handled by separate FormData logic usually)
+            // File object passed separately by parent, but good to have here
             file: formData.file
         };
 
-        console.log("🚀 FINAL SUBMISSION DATA:", submissionData);
-
-        // if (onSubmit) onSubmit(submissionData);
+        if (onSubmit) {
+            onSubmit(submissionData);
+        }
     };
 
+    // Styling constants
     const labelStyle = "block text-sm font-medium text-gray-700 mb-1.5";
     const inputStyle = "block w-full rounded-md border border-gray-200 bg-white pl-14 pr-4 py-2.5 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 outline-none transition-all shadow-sm sm:text-sm";
     const unitStyle = "absolute left-3 top-2.5 text-gray-500 text-sm font-medium pointer-events-none";
 
     return (
-        <div className="w-full min-h-screen flex flex-col items-center justify-center py-12 px-4">
-
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-8 tracking-tight drop-shadow-md">
-                Trawa flex
-            </h1>
-
+        <div className="w-full flex flex-col items-center justify-center py-12 px-4">
             <form
                 onSubmit={handleSubmit}
                 className="w-full max-w-2xl bg-white rounded-md p-6 sm:p-8 shadow-2xl"
@@ -120,12 +115,12 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
                     <div>
                         <label className={labelStyle}>Adresse</label>
                         <AddressInput onGridFeeFetched={handleGridFee} />
+                        {/* Hidden validation hack to ensure grid data is present if needed */}
                         <input
                             type="hidden"
-                            required
+                            // required // Uncomment if address is mandatory
                             checked={!!formData.gridData}
                             onChange={() => {}}
-                            onInvalid={(e: any) => e.target.setCustomValidity('Bitte wählen Sie eine gültige Adresse aus.')}
                         />
                     </div>
                 </div>
@@ -159,7 +154,6 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
                         <div>
                             <label htmlFor="pvConsumed" className={labelStyle}>PV Eigenverbrauch</label>
                             <div className="relative group">
-                                {/* Changed Unit to % */}
                                 <span className={unitStyle}>%</span>
                                 <input
                                     type="number"
@@ -208,6 +202,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
                                         className={`${inputStyle} border-emerald-100 focus:border-emerald-500`}
                                         placeholder="0.00"
                                         min="0"
+                                        required
                                     />
                                 </div>
                             </div>
@@ -224,6 +219,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
                                         className={`${inputStyle} border-emerald-100 focus:border-emerald-500`}
                                         placeholder="0.00"
                                         min="0"
+                                        required
                                     />
                                 </div>
                             </div>
@@ -241,6 +237,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
                                         style={{ paddingLeft: '4.5rem' }}
                                         placeholder="250"
                                         min="0"
+                                        required
                                     />
                                 </div>
                             </div>
@@ -298,9 +295,18 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect }) =>
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    className="w-full rounded-md bg-gray-900 text-white text-lg py-4 font-medium hover:bg-emerald-600 transition-all shadow-lg hover:shadow-xl transform active:scale-[0.99]"
+                    disabled={isLoading}
+                    className={`w-full rounded-md text-white text-lg py-4 font-medium transition-all shadow-lg hover:shadow-xl transform active:scale-[0.99] flex items-center justify-center gap-2
+                    ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-emerald-600'}`}
                 >
-                    Analyse starten
+                    {isLoading ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Analysiere Daten...</span>
+                        </>
+                    ) : (
+                        "Analyse starten"
+                    )}
                 </button>
             </form>
         </div>

@@ -7,7 +7,7 @@ Preprocessing: Load + PV → grid_load_kwh, consumption_kwh
    "timestamp" and "value kwh".
 
 2. Simulate PV profile using pvlib (from 1a_simulate_pv_profile.ipynb), driven by
-   pv_peak_power from exemplary_data/frontend_inputs.json (annual target in MWh).
+   pv_peak_power from frontend_data/frontend_inputs.json (annual target in MWh).
    Uses fixed location (no Google API); case_name and address are not used.
 
 3. Merge load + PV with pv_consumed_percentage (Eigenverbrauchsanteil, 0..1) and
@@ -15,12 +15,14 @@ Preprocessing: Load + PV → grid_load_kwh, consumption_kwh
    scale PV self-consumption per weekday to match grid-load weekday shares; then:
    - grid_load_kwh: original load from grid (kWh per 15-min)
    - consumption_kwh: grid_load_kwh + scaled PV (kWh per 15-min)
+   - pv_load_kwh: scaled PV self-consumption (kWh per 15-min)
 
-Output: CSV with columns timestamp_utc, grid_load_kwh, consumption_kwh.
+Output: CSV with columns timestamp_utc, grid_load_kwh, consumption_kwh, pv_load_kwh.
+Saved to frontend_data/ by default (for UI consumption).
 
 Usage (from project root or 3_prediction):
-  python 3_prediction/preprocess_load_and_pv.py --load exemplary_data/2024_timeseries_OsmoHolz.xlsx
-  python 3_prediction/preprocess_load_and_pv.py --load path/to/timeseries.csv --inputs exemplary_data/frontend_inputs.json
+  python 3_prediction/preprocess_load_and_pv.py --load frontend_data/2024_timeseries_OsmoHolz.xlsx
+  python 3_prediction/preprocess_load_and_pv.py --load path/to/timeseries.csv --inputs frontend_data/frontend_inputs.json
 """
 from pathlib import Path
 import argparse
@@ -33,13 +35,17 @@ import numpy as np
 # (1) Load consumption data (Excel or CSV)
 # -----------------------------------------------------------------------------
 
-REQUIRED_LOAD_COLUMNS = ("timestamp", "value kwh")
+# Accepted formats: ("timestamp", "value kwh") or ("timestamp_utc", "value")
+LOAD_COLUMN_VARIANTS = [
+    ("timestamp", "value kwh"),
+    ("timestamp_utc", "value"),
+]
 
 
 def load_consumption_data(path: str) -> pd.DataFrame:
     """
     Load load/consumption timeseries from Excel or CSV.
-    Only accepts columns: "timestamp" and "value kwh".
+    Accepts either: "timestamp" + "value kwh", or "timestamp_utc" + "value" (kWh).
     Returns DataFrame with columns: timestamp_utc, grid_load_kwh.
     """
     path = Path(path)
@@ -51,19 +57,21 @@ def load_consumption_data(path: str) -> pd.DataFrame:
     else:
         df = pd.read_csv(path, parse_dates=False)
 
-    missing = [c for c in REQUIRED_LOAD_COLUMNS if c not in df.columns]
-    if missing:
+    time_col, value_col = None, None
+    for t, v in LOAD_COLUMN_VARIANTS:
+        if t in df.columns and v in df.columns:
+            time_col, value_col = t, v
+            break
+    if time_col is None:
         raise ValueError(
-            f"Load file must have exactly these columns: {REQUIRED_LOAD_COLUMNS}. "
-            f"Missing: {missing}. Found: {list(df.columns)}"
+            f"Load file must have timestamp + value columns. "
+            f"Accepted: {LOAD_COLUMN_VARIANTS}. Found: {list(df.columns)}"
         )
 
-    df = df[list(REQUIRED_LOAD_COLUMNS)].copy()
-    df["value kwh"] = pd.to_numeric(df["value kwh"], errors="coerce")
-    df["value kwh"] = df["value kwh"].clip(lower=0)
-    df["timestamp_utc"] = pd.to_datetime(df["timestamp"], utc=True)
-    df = df.rename(columns={"value kwh": "grid_load_kwh"})[["timestamp_utc", "grid_load_kwh"]]
-    return df
+    df = df[[time_col, value_col]].copy()
+    df["grid_load_kwh"] = pd.to_numeric(df[value_col], errors="coerce").clip(lower=0)
+    df["timestamp_utc"] = pd.to_datetime(df[time_col], utc=True)
+    return df[["timestamp_utc", "grid_load_kwh"]]
 
 
 # -----------------------------------------------------------------------------
@@ -193,7 +201,8 @@ def merge_load_and_pv(
     )
     merged["pv_scaled_kwh"] = merged["pv_scaled_kwh"].fillna(0)
     merged["consumption_kwh"] = merged["grid_load_kwh"] + merged["pv_scaled_kwh"]
-    return merged[["timestamp_utc", "grid_load_kwh", "consumption_kwh"]]
+    merged["pv_load_kwh"] = merged["pv_scaled_kwh"]
+    return merged[["timestamp_utc", "grid_load_kwh", "consumption_kwh", "pv_load_kwh"]]
 
 
 # -----------------------------------------------------------------------------
@@ -201,16 +210,19 @@ def merge_load_and_pv(
 # -----------------------------------------------------------------------------
 
 def main():
+    script_dir = Path(__file__).resolve().parent
+    default_load = script_dir / "frontend_data" / "load_consumption_AmazonenWerkeDreyer.csv"
+    default_inputs = script_dir / "frontend_data" / "frontend_data.json"
+
     parser = argparse.ArgumentParser(description="Preprocess load + PV → grid_load_kwh, consumption_kwh")
-    parser.add_argument("--load", required=True, help="Path to load timeseries (Excel or CSV)")
-    parser.add_argument("--inputs", default=None, help="Path to frontend_inputs.json (default: exemplary_data/frontend_inputs.json)")
-    parser.add_argument("--output", default=None, help="Output CSV path (default: same dir as load, suffix _preprocessed.csv)")
+    parser.add_argument("--load", default=str(default_load), help=f"Path to load timeseries (default: frontend_data/load_consumption_AmazonenWerkeDreyer.csv)")
+    parser.add_argument("--inputs", default=None, help="Path to frontend_data.json (default: frontend_data/frontend_data.json)")
+    parser.add_argument("--output", default=None, help="Output CSV path (default: frontend_data/<load_stem>_preprocessed.csv)")
     parser.add_argument("--year", type=int, default=2024, help="Year for PV simulation (default: 2024)")
     args = parser.parse_args()
 
-    script_dir = Path(__file__).resolve().parent
     if args.inputs is None:
-        args.inputs = script_dir / "exemplary_data" / "frontend_inputs.json"
+        args.inputs = script_dir / "frontend_data" / "frontend_data.json"
     else:
         args.inputs = Path(args.inputs)
     if not args.inputs.exists():
@@ -251,9 +263,10 @@ def main():
     df_out = merge_load_and_pv(df_load, df_pv, pv_consumed_percentage=pv_consumed)
     print(f"Consumption (grid + PV): {df_out['consumption_kwh'].sum():,.2f} kWh total")
 
-    # Output
+    # Output: save to/ with columns grid_load_kwh, consumption_kwh, pv_load_kwh (all kWh)
+    output_dir = script_dir / "frontend_data"
     if args.output is None:
-        args.output = load_path.parent / (load_path.stem + "_preprocessed.csv")
+        args.output = output_dir / (load_path.stem + "_preprocessed.csv")
     else:
         args.output = Path(args.output)
     args.output.parent.mkdir(parents=True, exist_ok=True)

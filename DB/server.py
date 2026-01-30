@@ -90,11 +90,8 @@ class MLPredictor:
             "list_battery_proportion_hourly_max_load": float(params.get("list_battery_proportion_hourly_max_load", 0)),
             "pv_peak_power": float(params.get("pv_peak_power", 0)),
             "pv_consumed_percentage": float(params.get("pv_consumed_percentage", 0)),
-
-            # NEW PARAMETER NAMES -> Mapped to what ML likely expects (check your feature_extractors.py!)
-            # Assuming ML expects 'working_price_eur_per_kwh' but we receive 'static_grid_fees'
-            "working_price_eur_per_kwh": float(params.get("static_grid_fees", 0)),
-            "power_price_eur_per_kw": float(params.get("grid_fee_max_load_peak", 0)),
+            "static_grid_fees": float(params.get("static_grid_fees", 0)),
+            "grid_fee_max_load_peak": float(params.get("grid_fee_max_load_peak", 0)),
         }
         return pd.DataFrame([features])
 

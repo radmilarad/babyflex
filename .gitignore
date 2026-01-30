@@ -7,3 +7,7 @@ DB/.env
 .DS_Store
 dist
 .idea
+
+**/database
+
+DB/database/

@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 pandas
+requests
 # Battery Database Dependencies
 duckdb>=0.9.0
 pandas>=2.0.0

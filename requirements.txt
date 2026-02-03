@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlalchemy
 pandas
 requests
+python-multipart
 # Battery Database Dependencies
 duckdb>=0.9.0
 pandas>=2.0.0

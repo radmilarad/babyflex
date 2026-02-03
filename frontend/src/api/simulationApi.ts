@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = 'https://babyflex-api.onrender.com/api';
 
 export const submitSimulation = async (formData: any) => {
     const payload = new FormData();

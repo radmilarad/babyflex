@@ -66,7 +66,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
             });
 
             console.log("📡 Fetching Grid Data for:", params.toString());
-            const res = await fetch(`http://localhost:8000/api/enet-gridfee?${params.toString()}`);
+            const res = await fetch(`https://babyflex-api.onrender.com/api/enet-gridfee?${params.toString()}`);
 
             if (!res.ok) {
                 console.error("API Error Status:", res.status);

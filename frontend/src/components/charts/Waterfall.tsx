@@ -2,13 +2,7 @@ import React from 'react';
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 
-const raw = {
-    peak: 204038,
-    procurement: 284739,
-    trading: 294384
-};
-
-const BenefitWaterfall = ({ data }) => {
+const BenefitWaterfall = ({ data }: { data: { peak: number, procurement: number, trading: number }}) => {
 
     const step1_end = data.peak;
     const step2_end = step1_end + data.procurement;

@@ -5,7 +5,7 @@ ML Feature Extraction
 Feature extraction from battery simulation data: pipeline, store, data loader,
 KPI and timeseries feature logic.
 
-Config: 2_ml/config.py (nur Eingaben).
+Config: 2_ml/config_feature_extraction.py (nur Eingaben).
 Logik: timeseries_aggregations.py, kpi_feature_extractor.py, feature_extractors.py.
 """
 
@@ -13,7 +13,7 @@ from .pipeline import FeatureExtractionPipeline, extract_features
 from .feature_store import FeatureStore
 from .data_loader import DuckDBLoader
 from .kpi_feature_extractor import KPIFeatureExtractor
-from ..config import (
+from ..config_feature_extraction import (
     KPIFeatureConfig,
     DEFAULT_KPI_CONFIG,
     TIMESERIES_COLUMN_SPECS,

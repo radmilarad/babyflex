@@ -1,0 +1,482 @@
+[
+  {
+    "config_id": 854,
+    "peak_shaving_benefit": {
+      "estimated": -11302.345818241194,
+      "simulated": -0.030887705370332696,
+      "diff_abs": 11302.3149,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 36591630.21
+    },
+    "energy_procurement_optimization": {
+      "estimated": -1235.0573195767806,
+      "simulated": 6.350859765564564,
+      "diff_abs": 1241.4082,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 19547.09
+    },
+    "trading_revenue": {
+      "estimated": -28680.809478379742,
+      "simulated": 0.0,
+      "diff_abs": 28680.8095,
+      "diff_rel": null,
+      "diff_rel_raw_pct": null
+    }
+  },
+  {
+    "config_id": 861,
+    "peak_shaving_benefit": {
+      "estimated": -4441.3446254668315,
+      "simulated": -0.04367202261892089,
+      "diff_abs": 4441.301,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 10169670.85
+    },
+    "energy_procurement_optimization": {
+      "estimated": -1235.0573195767806,
+      "simulated": 6.350859765564564,
+      "diff_abs": 1241.4082,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 19547.09
+    },
+    "trading_revenue": {
+      "estimated": -26264.938660304295,
+      "simulated": 0.0,
+      "diff_abs": 26264.9387,
+      "diff_rel": null,
+      "diff_rel_raw_pct": null
+    }
+  },
+  {
+    "config_id": 886,
+    "peak_shaving_benefit": {
+      "estimated": -18905.37112299833,
+      "simulated": 0.9131300497039092,
+      "diff_abs": 18906.2843,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 2070491.96
+    },
+    "energy_procurement_optimization": {
+      "estimated": 8046.9173222044665,
+      "simulated": 6473.790434672158,
+      "diff_abs": 1573.1269,
+      "diff_rel": 0.242999,
+      "diff_rel_raw_pct": 24.3
+    },
+    "trading_revenue": {
+      "estimated": 15435.413909529932,
+      "simulated": 12861.736449160715,
+      "diff_abs": 2573.6775,
+      "diff_rel": 0.200103,
+      "diff_rel_raw_pct": 20.01
+    }
+  },
+  {
+    "config_id": 224,
+    "peak_shaving_benefit": {
+      "estimated": -26949.62416127547,
+      "simulated": -2.331840688215923,
+      "diff_abs": 26947.2923,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 1155623.21
+    },
+    "energy_procurement_optimization": {
+      "estimated": 6750687.910383258,
+      "simulated": 6785691.629208048,
+      "diff_abs": 35003.7188,
+      "diff_rel": 0.005158,
+      "diff_rel_raw_pct": 0.52
+    },
+    "trading_revenue": {
+      "estimated": 7349152.500466258,
+      "simulated": 7403872.530469576,
+      "diff_abs": 54720.03,
+      "diff_rel": 0.007391,
+      "diff_rel_raw_pct": 0.74
+    }
+  },
+  {
+    "config_id": 2561,
+    "peak_shaving_benefit": {
+      "estimated": 903.36777255687,
+      "simulated": -0.10561933388817124,
+      "diff_abs": 903.4734,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 855405.31
+    },
+    "energy_procurement_optimization": {
+      "estimated": 7490.0221986846045,
+      "simulated": 4386.135280325483,
+      "diff_abs": 3103.8869,
+      "diff_rel": 0.707659,
+      "diff_rel_raw_pct": 70.77
+    },
+    "trading_revenue": {
+      "estimated": 13102.770314433854,
+      "simulated": 12997.981132862991,
+      "diff_abs": 104.7892,
+      "diff_rel": 0.008062,
+      "diff_rel_raw_pct": 0.81
+    }
+  },
+  {
+    "config_id": 798,
+    "peak_shaving_benefit": {
+      "estimated": -317024.30228453845,
+      "simulated": -537.092648379039,
+      "diff_abs": 316487.2096,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 58926.0
+    },
+    "energy_procurement_optimization": {
+      "estimated": -344017.03407416685,
+      "simulated": 92518.07083062688,
+      "diff_abs": 436535.1049,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 471.84
+    },
+    "trading_revenue": {
+      "estimated": 162551.5139857805,
+      "simulated": 178425.93530777478,
+      "diff_abs": 15874.4213,
+      "diff_rel": 0.088969,
+      "diff_rel_raw_pct": 8.9
+    }
+  },
+  {
+    "config_id": 804,
+    "peak_shaving_benefit": {
+      "estimated": -317024.30228453845,
+      "simulated": -537.092648379039,
+      "diff_abs": 316487.2096,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 58926.0
+    },
+    "energy_procurement_optimization": {
+      "estimated": -344017.03407416685,
+      "simulated": 92518.07083062688,
+      "diff_abs": 436535.1049,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 471.84
+    },
+    "trading_revenue": {
+      "estimated": 162551.5139857805,
+      "simulated": 178425.93530777478,
+      "diff_abs": 15874.4213,
+      "diff_rel": 0.088969,
+      "diff_rel_raw_pct": 8.9
+    }
+  },
+  {
+    "config_id": 811,
+    "peak_shaving_benefit": {
+      "estimated": -317024.30228453845,
+      "simulated": -537.092648379039,
+      "diff_abs": 316487.2096,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 58926.0
+    },
+    "energy_procurement_optimization": {
+      "estimated": -344017.03407416685,
+      "simulated": 92518.07083062688,
+      "diff_abs": 436535.1049,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 471.84
+    },
+    "trading_revenue": {
+      "estimated": 162551.5139857805,
+      "simulated": 178425.93530777478,
+      "diff_abs": 15874.4213,
+      "diff_rel": 0.088969,
+      "diff_rel_raw_pct": 8.9
+    }
+  },
+  {
+    "config_id": 940,
+    "peak_shaving_benefit": {
+      "estimated": 54473.27290707379,
+      "simulated": -103.33548236911884,
+      "diff_abs": 54576.6084,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 52814.97
+    },
+    "energy_procurement_optimization": {
+      "estimated": 26837.67715840847,
+      "simulated": 25976.217414829793,
+      "diff_abs": 861.4597,
+      "diff_rel": 0.033163,
+      "diff_rel_raw_pct": 3.32
+    },
+    "trading_revenue": {
+      "estimated": 61835.783665813586,
+      "simulated": 48735.42427930418,
+      "diff_abs": 13100.3594,
+      "diff_rel": 0.268806,
+      "diff_rel_raw_pct": 26.88
+    }
+  },
+  {
+    "config_id": 880,
+    "peak_shaving_benefit": {
+      "estimated": -18080.585256999733,
+      "simulated": -35.52472842996099,
+      "diff_abs": 18045.0605,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 50795.77
+    },
+    "energy_procurement_optimization": {
+      "estimated": 9013.561049369548,
+      "simulated": 8772.598430334714,
+      "diff_abs": 240.9626,
+      "diff_rel": 0.027468,
+      "diff_rel_raw_pct": 2.75
+    },
+    "trading_revenue": {
+      "estimated": 20001.737822416635,
+      "simulated": 19419.600189681914,
+      "diff_abs": 582.1376,
+      "diff_rel": 0.029977,
+      "diff_rel_raw_pct": 3.0
+    }
+  },
+  {
+    "config_id": 3108,
+    "peak_shaving_benefit": {
+      "estimated": 16259.479405954246,
+      "simulated": -65.88005937816342,
+      "diff_abs": 16325.3595,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 24780.43
+    },
+    "energy_procurement_optimization": {
+      "estimated": 42840.39584271006,
+      "simulated": 57047.709502055426,
+      "diff_abs": 14207.3137,
+      "diff_rel": 0.249043,
+      "diff_rel_raw_pct": 24.9
+    },
+    "trading_revenue": {
+      "estimated": 80469.09622610573,
+      "simulated": 114640.44038976188,
+      "diff_abs": 34171.3442,
+      "diff_rel": 0.298074,
+      "diff_rel_raw_pct": 29.81
+    }
+  },
+  {
+    "config_id": 186,
+    "peak_shaving_benefit": {
+      "estimated": -3735.395555620647,
+      "simulated": 18.743360100622112,
+      "diff_abs": 3754.1389,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 20029.17
+    },
+    "energy_procurement_optimization": {
+      "estimated": 9343.840638064818,
+      "simulated": 7125.87208591405,
+      "diff_abs": 2217.9686,
+      "diff_rel": 0.311256,
+      "diff_rel_raw_pct": 31.13
+    },
+    "trading_revenue": {
+      "estimated": 17001.564009989408,
+      "simulated": 16391.022087469948,
+      "diff_abs": 610.5419,
+      "diff_rel": 0.037249,
+      "diff_rel_raw_pct": 3.72
+    }
+  },
+  {
+    "config_id": 1899,
+    "peak_shaving_benefit": {
+      "estimated": 40755.8180726249,
+      "simulated": -223.70610612630844,
+      "diff_abs": 40979.5242,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 18318.46
+    },
+    "energy_procurement_optimization": {
+      "estimated": 128371.43999021965,
+      "simulated": 125170.23037584219,
+      "diff_abs": 3201.2096,
+      "diff_rel": 0.025575,
+      "diff_rel_raw_pct": 2.56
+    },
+    "trading_revenue": {
+      "estimated": 304394.7946758251,
+      "simulated": 314149.101390883,
+      "diff_abs": 9754.3067,
+      "diff_rel": 0.03105,
+      "diff_rel_raw_pct": 3.1
+    }
+  },
+  {
+    "config_id": 655,
+    "peak_shaving_benefit": {
+      "estimated": 11049.217207292913,
+      "simulated": 73.47247670148192,
+      "diff_abs": 10975.7447,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 14938.58
+    },
+    "energy_procurement_optimization": {
+      "estimated": 37750.23623957423,
+      "simulated": 35997.52171525889,
+      "diff_abs": 1752.7145,
+      "diff_rel": 0.04869,
+      "diff_rel_raw_pct": 4.87
+    },
+    "trading_revenue": {
+      "estimated": 83186.24361990138,
+      "simulated": 89165.83544169451,
+      "diff_abs": 5979.5918,
+      "diff_rel": 0.067061,
+      "diff_rel_raw_pct": 6.71
+    }
+  },
+  {
+    "config_id": 15,
+    "peak_shaving_benefit": {
+      "estimated": 50869.129444744314,
+      "simulated": -27977.20964928961,
+      "diff_abs": 78846.3391,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 281.82
+    },
+    "energy_procurement_optimization": {
+      "estimated": 29913.65875020093,
+      "simulated": -787.3171905533236,
+      "diff_abs": 30700.9759,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 3899.44
+    },
+    "trading_revenue": {
+      "estimated": 44877.16834542723,
+      "simulated": -309.3637863928525,
+      "diff_abs": 45186.5321,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 14606.28
+    }
+  },
+  {
+    "config_id": 273,
+    "peak_shaving_benefit": {
+      "estimated": 27038.65307884565,
+      "simulated": -191.193480089074,
+      "diff_abs": 27229.8466,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 14242.04
+    },
+    "energy_procurement_optimization": {
+      "estimated": 7105.166794426359,
+      "simulated": 17909.916922093835,
+      "diff_abs": 10804.7501,
+      "diff_rel": 0.603283,
+      "diff_rel_raw_pct": 60.33
+    },
+    "trading_revenue": {
+      "estimated": -5612.212145284414,
+      "simulated": 32234.698078660076,
+      "diff_abs": 37846.9102,
+      "diff_rel": 1.174105,
+      "diff_rel_raw_pct": 117.41
+    }
+  },
+  {
+    "config_id": 656,
+    "peak_shaving_benefit": {
+      "estimated": 9239.536803491323,
+      "simulated": 73.35791191014158,
+      "diff_abs": 9166.1789,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 12495.15
+    },
+    "energy_procurement_optimization": {
+      "estimated": 79396.59358092397,
+      "simulated": 86274.91387296433,
+      "diff_abs": 6878.3203,
+      "diff_rel": 0.079726,
+      "diff_rel_raw_pct": 7.97
+    },
+    "trading_revenue": {
+      "estimated": 192670.79264153392,
+      "simulated": 209316.3116936512,
+      "diff_abs": 16645.5191,
+      "diff_rel": 0.079523,
+      "diff_rel_raw_pct": 7.95
+    }
+  },
+  {
+    "config_id": 806,
+    "peak_shaving_benefit": {
+      "estimated": -352888.8638797924,
+      "simulated": -3197.9121842330787,
+      "diff_abs": 349690.9517,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 10934.98
+    },
+    "energy_procurement_optimization": {
+      "estimated": -423691.6192920945,
+      "simulated": 99596.00342099695,
+      "diff_abs": 523287.6227,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 525.41
+    },
+    "trading_revenue": {
+      "estimated": 161301.7770398932,
+      "simulated": 192007.8914199911,
+      "diff_abs": 30706.1144,
+      "diff_rel": 0.159921,
+      "diff_rel_raw_pct": 15.99
+    }
+  },
+  {
+    "config_id": 813,
+    "peak_shaving_benefit": {
+      "estimated": -352888.8638797924,
+      "simulated": -3197.9121842330787,
+      "diff_abs": 349690.9517,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 10934.98
+    },
+    "energy_procurement_optimization": {
+      "estimated": -423691.6192920945,
+      "simulated": 99596.00342099695,
+      "diff_abs": 523287.6227,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 525.41
+    },
+    "trading_revenue": {
+      "estimated": 161301.7770398932,
+      "simulated": 192007.8914199911,
+      "diff_abs": 30706.1144,
+      "diff_rel": 0.159921,
+      "diff_rel_raw_pct": 15.99
+    }
+  },
+  {
+    "config_id": 1997,
+    "peak_shaving_benefit": {
+      "estimated": 328269.5146406573,
+      "simulated": 3056.6661528899567,
+      "diff_abs": 325212.8485,
+      "diff_rel": 2.0,
+      "diff_rel_raw_pct": 10639.46
+    },
+    "energy_procurement_optimization": {
+      "estimated": 25941.123695902887,
+      "simulated": 27836.902127284207,
+      "diff_abs": 1895.7784,
+      "diff_rel": 0.068103,
+      "diff_rel_raw_pct": 6.81
+    },
+    "trading_revenue": {
+      "estimated": 19867.9565258532,
+      "simulated": 44987.17574021142,
+      "diff_abs": 25119.2192,
+      "diff_rel": 0.558364,
+      "diff_rel_raw_pct": 55.84
+    }
+  }
+]

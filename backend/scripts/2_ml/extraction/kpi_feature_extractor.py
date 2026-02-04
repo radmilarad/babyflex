@@ -7,9 +7,9 @@ Input-Features kommen aus direct/indirect/load-profile, nicht aus KPIs.
 """
 import numpy as np
 from typing import Dict, List, Tuple
-import duckdb
 
-from ..config import KPIFeatureConfig, DEFAULT_KPI_CONFIG
+from ..config_feature_extraction import KPIFeatureConfig, DEFAULT_KPI_CONFIG
+from .db_utils import connect_with_retry
 
 
 class KPIFeatureExtractor:
@@ -31,7 +31,7 @@ class KPIFeatureExtractor:
         if run_id in self._baseline_cache:
             return self._baseline_cache[run_id]
 
-        with duckdb.connect(self.db_path, read_only=True) as conn:
+        with connect_with_retry(self.db_path, read_only=True) as conn:
             baseline = conn.execute("""
                 SELECT config_id
                 FROM battery_configs
@@ -60,7 +60,7 @@ class KPIFeatureExtractor:
 
     def _get_config_kpis(self, config_id: int) -> Tuple[Dict[str, float], int]:
         """Get KPIs for a config and its run_id."""
-        with duckdb.connect(self.db_path, read_only=True) as conn:
+        with connect_with_retry(self.db_path, read_only=True) as conn:
             result = conn.execute("""
                 SELECT run_id FROM battery_configs WHERE config_id = ?
             """, [config_id]).fetchone()
@@ -109,7 +109,7 @@ class KPIFeatureExtractor:
 
     def validate_config(self) -> Dict[str, list]:
         """Check which configured target KPIs actually exist in the database."""
-        with duckdb.connect(self.db_path, read_only=True) as conn:
+        with connect_with_retry(self.db_path, read_only=True) as conn:
             available = set(conn.execute("""
                 SELECT DISTINCT kpi_name FROM kpi_summary
             """).df()['kpi_name'].tolist())

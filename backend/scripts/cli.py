@@ -31,7 +31,7 @@ import argparse
 import sys
 from pathlib import Path
 from tabulate import tabulate
-from battery_db import BatteryDatabase
+from core import BatteryDatabase, BenefitCalculator, BENEFIT_DEFINITIONS
 
 
 def cmd_init(args):
@@ -460,8 +460,6 @@ def cmd_feature_correlations(args):
 
 def cmd_calculate_benefits(args):
     """Calculate benefit KPIs relative to baseline."""
-    from benefit_calculator import BenefitCalculator
-    
     with BatteryDatabase() as db:
         calc = BenefitCalculator(db)
         
@@ -502,8 +500,6 @@ def cmd_calculate_benefits(args):
 
 def cmd_list_benefits(args):
     """List available benefit definitions."""
-    from benefit_calculator import BENEFIT_DEFINITIONS
-    
     print("\n📊 AVAILABLE BENEFIT DEFINITIONS:")
     rows = []
     for name, defn in BENEFIT_DEFINITIONS.items():

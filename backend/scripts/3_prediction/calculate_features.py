@@ -3,14 +3,14 @@
 Calculate ML features from frontend_data for prediction (same as 2_ml pipeline).
 ================================================================================
 
-Reads:
+Reads (all energy-related inputs in kWh):
 - frontend_data/frontend_data.json → direct inputs (list_battery_*, pv_*, static_grid_fees, etc.)
 - frontend_data/load_consumption_*_preprocessed.csv → timestamp_utc, grid_load_kwh, consumption_kwh, pv_load_kwh
 
-Computes the same feature set as the ML pipeline (2_ml/config.py):
+Computes the same feature set as the ML pipeline (2_ml/config_feature_extraction.py):
 - Direct: DIRECT_INPUT_NAMES from JSON (missing → NaN).
 - Load-profile: column stats/percentiles/custom for consumption_load_kwh, pv_load_kwh (column alias consumption_kwh).
-- Cross-column: consumption_pv_pearson, consumption_da_*, etc.
+- Cross-column: consumption_pv_pearson, consumption_da_*, usage_hours (grid_load_total_kwh / grid_load_peak aus grid_load_kwh).
 - Ratio: battery_usable_per_sum_pv, battery_usable_per_sum_consumption.
 
 Output: working_data/features.json – same feature names as training, for predict_buckets.py.
@@ -33,7 +33,7 @@ if str(DB_ROOT) not in sys.path:
     sys.path.insert(0, str(DB_ROOT))
 
 import importlib.util
-_config_spec = importlib.util.spec_from_file_location("ml_config", DB_ROOT / "2_ml" / "config.py")
+_config_spec = importlib.util.spec_from_file_location("ml_config", DB_ROOT / "2_ml" / "config_feature_extraction.py")
 ml_config = importlib.util.module_from_spec(_config_spec)
 _config_spec.loader.exec_module(ml_config)
 
@@ -147,12 +147,19 @@ def main() -> None:
     df = build_ml_df(df_raw)
     direct = load_direct_inputs(inputs_path)
 
+    # pv_annual_total = sum of simulated PV profile (kWh); overwrites JSON if present
+    if "pv_load_kwh" in df.columns:
+        direct["pv_annual_total"] = float(df["pv_load_kwh"].sum())
+    # static_grid_fees, grid_fee_max_load_peak: from frontend_data.json (same key names)
+
     specs = getattr(ml_config, "LOAD_PROFILE_COLUMN_SPECS", ml_config.TIMESERIES_COLUMN_SPECS)
     df_names = getattr(ml_config, "LOAD_PROFILE_DF_FEATURE_NAMES", ml_config.TIMESERIES_DF_FEATURE_NAMES)
     column_and_df = ts_aggregations.extract_all_from_config(df, specs, df_names)
+    # Model expects load-profile features with prefix "ts__" (same as 2_ml pipeline)
+    ts_features = {f"ts__{k}": v for k, v in column_and_df.items()}
     ratio = compute_ratio_features(df, direct)
-
-    all_features = {**direct, **column_and_df, **ratio}
+    # Direct inputs are used as-is; all energy values are expected in kWh.
+    all_features = {**direct, **ts_features, **ratio}
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)

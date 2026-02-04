@@ -92,7 +92,7 @@ const App = () => {
             </div>
 
             {hasSubmitted && (
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 mt-16 animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out fill-mode-forwards">
+                <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 mt-16 animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out fill-mode-forwards">
                     <div className="flex items-center space-x-4 mb-8">
                         <div className="h-px bg-gray-300 flex-1"></div>
                         <span className="text-gray-500 font-semibold uppercase tracking-wider text-sm">Optimization Report</span>

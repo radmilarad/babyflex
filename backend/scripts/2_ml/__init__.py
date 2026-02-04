@@ -30,7 +30,7 @@ Custom target_kpis:
     features = pipeline.run()
 
 Adding New Timeseries Features:
-    Eingaben: 2_ml/config.py (TIMESERIES_COLUMN_SPECS, TIMESERIES_DF_FEATURE_NAMES)
+    Eingaben: 2_ml/config_feature_extraction.py (TIMESERIES_COLUMN_SPECS, TIMESERIES_DF_FEATURE_NAMES)
     Logik: 2_ml/extraction/timeseries_aggregations.py (CUSTOM_COLUMN_AGGREGATIONS, CUSTOM_DF_FEATURES)
 """
 

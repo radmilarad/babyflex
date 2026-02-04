@@ -1,0 +1,14 @@
+feature,r,abs_r,weak
+ts__consumption_load_kwh_mean,0.4182,0.4182,False
+list_battery_usable_max_state,0.2004,0.2004,False
+pv_consumed_percentage,0.1139,0.1139,False
+pv_annual_total,0.0973,0.0973,True
+ts__consumption_load_kwh_peak_to_mean,-0.0913,0.0913,True
+ts__consumption_pv_pearson,-0.0892,0.0892,True
+static_grid_fees,-0.0549,0.0549,True
+battery_usable_per_sum_pv,0.0282,0.0282,True
+grid_fee_max_load_peak,0.0265,0.0265,True
+list_battery_proportion_hourly_max_load,-0.0264,0.0264,True
+battery_usable_per_sum_consumption,-0.0158,0.0158,True
+ts__usage_hours,0.0121,0.0121,True
+list_battery_num_annual_cycles,-0.0069,0.0069,True

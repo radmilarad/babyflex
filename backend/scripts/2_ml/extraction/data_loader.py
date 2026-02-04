@@ -5,10 +5,11 @@ Data Loader
 Interfaces with DuckDB to load battery simulation data.
 Handles lazy loading of timeseries one at a time for memory efficiency.
 """
-import duckdb
 import pandas as pd
 from pathlib import Path
 from typing import Generator, Tuple, Optional
+
+from .db_utils import connect_with_retry
 
 
 class DuckDBLoader:
@@ -35,7 +36,7 @@ class DuckDBLoader:
         Returns:
             DataFrame with config metadata
         """
-        with duckdb.connect(self.db_path, read_only=True) as conn:
+        with connect_with_retry(self.db_path, read_only=True) as conn:
             query = """
                 SELECT 
                     bc.config_id,
@@ -80,14 +81,14 @@ class DuckDBLoader:
         Returns:
             DataFrame with timeseries data
         """
-        if not timeseries_file_path:
+        if not timeseries_file_path or not isinstance(timeseries_file_path, str):
             return pd.DataFrame()
         
         csv_path = self.data_root / timeseries_file_path
         if not csv_path.exists():
             return pd.DataFrame()
         
-        with duckdb.connect(self.db_path, read_only=True) as conn:
+        with connect_with_retry(self.db_path, read_only=True) as conn:
             try:
                 # Use DuckDB's blazing fast CSV reader
                 return conn.execute(f"""
@@ -136,7 +137,7 @@ class DuckDBLoader:
     
     def get_available_kpis(self) -> list:
         """Get list of all KPI names in the database."""
-        with duckdb.connect(self.db_path, read_only=True) as conn:
+        with connect_with_retry(self.db_path, read_only=True) as conn:
             result = conn.execute("""
                 SELECT DISTINCT kpi_name 
                 FROM kpi_summary 
@@ -146,7 +147,7 @@ class DuckDBLoader:
     
     def get_clients(self) -> list:
         """Get list of all client names."""
-        with duckdb.connect(self.db_path, read_only=True) as conn:
+        with connect_with_retry(self.db_path, read_only=True) as conn:
             result = conn.execute("""
                 SELECT DISTINCT client_name 
                 FROM clients 

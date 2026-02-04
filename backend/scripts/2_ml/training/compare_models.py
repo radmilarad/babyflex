@@ -22,25 +22,28 @@ from typing import List, Dict, Optional
 from .model_registry import ModelRegistry
 
 
-def print_model_overview(registry: ModelRegistry = None):
+def print_model_overview(registry: ModelRegistry = None, only_targets: Optional[List[str]] = None):
     """
     Print comprehensive overview of all models.
     
     Args:
         registry: ModelRegistry instance (loads default if None)
+        only_targets: If set, only show these model names (e.g. ["peak_shaving_benefit"]).
     """
     if registry is None:
         registry = ModelRegistry()
     
-    if not registry.models:
-        print("No models registered. Run training first:")
-        print("  python -m 2_ml.training.train_models")
+    models_to_show = registry.models
+    if only_targets is not None:
+        models_to_show = {k: v for k, v in registry.models.items() if k in only_targets}
+    if not models_to_show:
+        print("No models to show." + (" Run training first." if not only_targets else ""))
         return
     
-    _print_summary(registry)
-    _print_feature_comparison(registry)
-    _print_category_analysis(registry)
-    _print_feature_insights(registry)
+    _print_summary(registry, only_targets=only_targets)
+    _print_feature_comparison(registry, only_targets=only_targets)
+    _print_category_analysis(registry, only_targets=only_targets)
+    _print_feature_insights(registry, only_targets=only_targets)
 
 
 def compare_models(registry: ModelRegistry = None) -> pd.DataFrame:
@@ -64,8 +67,11 @@ def compare_models(registry: ModelRegistry = None) -> pd.DataFrame:
 # INTERNAL FUNCTIONS
 # =============================================================================
 
-def _print_summary(registry: ModelRegistry):
+def _print_summary(registry: ModelRegistry, only_targets: Optional[List[str]] = None):
     """Print performance summary table."""
+    models = registry.models if only_targets is None else {k: v for k, v in registry.models.items() if k in only_targets}
+    if not models:
+        return
     print("\n" + "="*80)
     print("MODEL PERFORMANCE SUMMARY")
     print("="*80)
@@ -74,31 +80,41 @@ def _print_summary(registry: ModelRegistry):
     print("│ Target                              │   R²    │   MAE   │     CV R²      │  Samples  │")
     print("├─────────────────────────────────────┼─────────┼─────────┼────────────────┼───────────┤")
     
-    for name, info in registry.models.items():
+    for name, info in models.items():
         cv_str = f"{info.cv_r2_mean:.3f}±{info.cv_r2_std:.2f}"
         print(f"│ {name:35s} │ {info.r2_score:7.3f} │ {info.mae:7.1f} │ {cv_str:>14s} │ {info.n_samples:9d} │")
     
     print("└─────────────────────────────────────┴─────────┴─────────┴────────────────┴───────────┘")
     
     print("\nModel Types:")
-    for name, info in registry.models.items():
+    for name, info in models.items():
         print(f"  • {name}: {info.model_type}")
     
-    if registry.models:
-        best = max(registry.models.items(), key=lambda x: x[1].r2_score)
+    if models:
+        best = max(models.items(), key=lambda x: x[1].r2_score)
         print(f"\nBest performing: {best[0]} (R² = {best[1].r2_score:.3f})")
 
 
-def _get_comparison_df(registry: ModelRegistry) -> pd.DataFrame:
+def _models_filtered(registry: ModelRegistry, only_targets: Optional[List[str]] = None):
+    """Return registry.models or subset when only_targets is set."""
+    if only_targets is None:
+        return registry.models
+    return {k: v for k, v in registry.models.items() if k in only_targets}
+
+
+def _get_comparison_df(registry: ModelRegistry, only_targets: Optional[List[str]] = None) -> pd.DataFrame:
     """Build feature comparison DataFrame."""
+    models = _models_filtered(registry, only_targets)
+    if not models:
+        return pd.DataFrame()
     all_features = set()
-    for info in registry.models.values():
+    for info in models.values():
         all_features.update(info.feature_importance.keys())
     
     comparison = []
     for feature in all_features:
         row = {'feature': feature}
-        for name, info in registry.models.items():
+        for name, info in models.items():
             row[name] = info.feature_importance.get(feature, 0)
         comparison.append(row)
     
@@ -121,14 +137,17 @@ def _get_comparison_df(registry: ModelRegistry) -> pd.DataFrame:
     return df.sort_values('mean_importance', ascending=False)
 
 
-def _print_feature_comparison(registry: ModelRegistry, top_n: int = 15):
+def _print_feature_comparison(registry: ModelRegistry, only_targets: Optional[List[str]] = None, top_n: int = 15):
     """Print feature importance comparison table."""
+    models = _models_filtered(registry, only_targets)
+    if not models:
+        return
     print("\n" + "="*80)
     print("FEATURE IMPORTANCE COMPARISON")
     print("="*80)
     
-    df = _get_comparison_df(registry)
-    model_cols = list(registry.models.keys())
+    df = _get_comparison_df(registry, only_targets)
+    model_cols = list(models.keys())
     
     print(f"\nTop {top_n} Features (sorted by mean importance across all models):\n")
     
@@ -154,8 +173,11 @@ def _print_feature_comparison(registry: ModelRegistry, top_n: int = 15):
         print(line)
 
 
-def _print_category_analysis(registry: ModelRegistry):
+def _print_category_analysis(registry: ModelRegistry, only_targets: Optional[List[str]] = None):
     """Analyze features by category (direct inputs vs. load-profile-derived)."""
+    models = _models_filtered(registry, only_targets)
+    if not models:
+        return
     print("\n" + "="*80)
     print("FEATURE CATEGORY ANALYSIS")
     print("="*80)
@@ -167,7 +189,7 @@ def _print_category_analysis(registry: ModelRegistry):
         'Other': lambda f: not (f.startswith('list_battery_') or f in ('pv_annual_total', 'pv_consumed_percentage') or f.startswith('ts__')),
     }
     
-    for name, info in registry.models.items():
+    for name, info in models.items():
         print(f"--- {name} ---")
         
         importance = info.feature_importance
@@ -187,13 +209,16 @@ def _print_category_analysis(registry: ModelRegistry):
         print()
 
 
-def _print_feature_insights(registry: ModelRegistry):
+def _print_feature_insights(registry: ModelRegistry, only_targets: Optional[List[str]] = None):
     """Print insights about shared and unique features."""
+    models = _models_filtered(registry, only_targets)
+    if not models:
+        return
     print("="*80)
     print("FEATURE INSIGHTS")
     print("="*80)
     
-    shared = _get_shared_important_features(registry, threshold=0.01)
+    shared = _get_shared_important_features(registry, threshold=0.01, only_targets=only_targets)
     if shared:
         print(f"\nFeatures important for ALL models ({len(shared)}):")
         for f in shared[:8]:
@@ -202,8 +227,8 @@ def _print_feature_insights(registry: ModelRegistry):
             print(f"  ... and {len(shared) - 8} more")
     
     print()
-    for name in registry.models.keys():
-        unique = _get_unique_important_features(registry, name, threshold=0.02)
+    for name in models.keys():
+        unique = _get_unique_important_features(registry, name, threshold=0.02, only_targets=only_targets)
         if unique:
             print(f"Uniquely important for {name}:")
             for f in unique[:5]:
@@ -213,15 +238,17 @@ def _print_feature_insights(registry: ModelRegistry):
 
 
 def _get_shared_important_features(
-    registry: ModelRegistry, 
-    threshold: float = 0.01
+    registry: ModelRegistry,
+    threshold: float = 0.01,
+    only_targets: Optional[List[str]] = None,
 ) -> List[str]:
     """Get features important (> threshold) for ALL models."""
-    if not registry.models:
+    models = _models_filtered(registry, only_targets)
+    if not models:
         return []
     
     shared = None
-    for info in registry.models.values():
+    for info in models.values():
         important = {f for f, v in info.feature_importance.items() if v > threshold}
         if shared is None:
             shared = important
@@ -233,21 +260,23 @@ def _get_shared_important_features(
 
 def _get_unique_important_features(
     registry: ModelRegistry,
-    target_name: str, 
-    threshold: float = 0.02
+    target_name: str,
+    threshold: float = 0.02,
+    only_targets: Optional[List[str]] = None,
 ) -> List[str]:
     """Get features uniquely important for one model."""
+    models = _models_filtered(registry, only_targets)
     clean_name = target_name.replace("target_", "")
-    if clean_name not in registry.models:
+    if clean_name not in models:
         return []
     
     this_important = {
-        f for f, v in registry.models[clean_name].feature_importance.items() 
+        f for f, v in models[clean_name].feature_importance.items()
         if v > threshold
     }
     
     other_important = set()
-    for name, info in registry.models.items():
+    for name, info in models.items():
         if name != clean_name:
             other_important.update(
                 f for f, v in info.feature_importance.items() 

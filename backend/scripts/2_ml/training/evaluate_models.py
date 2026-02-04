@@ -74,6 +74,8 @@ def evaluate_models(
         print("\n" + "="*60)
         print("MODEL EVALUATION")
         print("="*60)
+        print("(In-sample = full dataset, incl. training data → high R² is expected.)")
+        print("For generalization, see 'Test R²' / 'CV R²' from training (below).")
     
     for name, info in registry.models.items():
         target_col = f"target_{name}"
@@ -95,7 +97,7 @@ def evaluate_models(
         model = registry.load_model(name)
         y_pred = model.predict(X_eval)
         
-        # Calculate metrics
+        # In-sample metrics (full data – not a measure of generalization)
         r2 = r2_score(y_eval, y_pred)
         mae = mean_absolute_error(y_eval, y_pred)
         rmse = np.sqrt(mean_squared_error(y_eval, y_pred))
@@ -113,7 +115,14 @@ def evaluate_models(
         if verbose:
             print(f"\n--- {name} ---")
             print(f"  Samples: {len(y_eval)}")
-            print(f"  R²: {r2:.3f}")
+            print(f"  In-sample R²: {r2:.3f}  (full dataset)")
+            test_r2 = getattr(info, "r2_score", None)
+            cv_mean = getattr(info, "cv_r2_mean", None)
+            cv_std = getattr(info, "cv_r2_std", None)
+            if test_r2 is not None:
+                print(f"  Test R² (from training): {test_r2:.3f}")
+            if cv_mean is not None:
+                print(f"  CV R² (from training):   {cv_mean:.3f}" + (f" (±{cv_std:.3f})" if cv_std is not None else ""))
             print(f"  MAE: {mae:.2f}")
             print(f"  RMSE: {rmse:.2f}")
             print(f"  Mean actual: {y_eval.mean():.2f}")

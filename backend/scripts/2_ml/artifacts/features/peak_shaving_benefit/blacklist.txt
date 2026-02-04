@@ -1,0 +1,57 @@
+# Blacklist für dieses Target: eine Feature-Zeile pro Zeile.
+# Target = Grid-Fee-Reduktion insgesamt (Peak-Shaving + PV-Eigenverbrauch).
+# Daher relevant: usage_hours, grid fees, battery, consumption mean/peak, pv_annual_total,
+# pv_consumed_percentage, ts__consumption_pv_pearson (Verbrauch–PV; nur Pearson, nicht Spearman/R²).
+#
+# Pro Korrelations-Konzept nur eine Metrik (Pearson); Spearman und R² redundant
+ts__consumption_pv_spearman
+ts__consumption_pv_r2
+#
+# Reine PV-Verteilungs-Features (pv_annual_total + pv_consumed_percentage bewusst nicht auf der Blacklist)
+ts__pv_load_kwh_cv
+ts__pv_load_kwh_iqr
+ts__pv_load_kwh_max
+ts__pv_load_kwh_mean
+ts__pv_load_kwh_min
+ts__pv_load_kwh_p10
+ts__pv_load_kwh_p25
+ts__pv_load_kwh_p50
+ts__pv_load_kwh_p75
+ts__pv_load_kwh_p90
+ts__pv_load_kwh_p95
+ts__pv_load_kwh_peak_to_mean
+ts__pv_load_kwh_skewness
+ts__pv_load_kwh_std
+ts__pv_load_kwh_sum
+#
+# Thematisch wenig relevant für Grid-Fee-Reduktion (eher Trading: Day-Ahead-Korrelation)
+ts__consumption_da_pearson
+ts__consumption_da_r2
+ts__consumption_da_spearman
+#
+# Consumption: redundant mit mean / peak_to_mean (|r|>0.9); eine Level- + eine Spitzen-Metrik reichen
+ts__consumption_load_kwh_sum
+ts__consumption_load_kwh_p10
+ts__consumption_load_kwh_p25
+ts__consumption_load_kwh_p50
+ts__consumption_load_kwh_p75
+ts__consumption_load_kwh_p90
+ts__consumption_load_kwh_p95
+ts__consumption_load_kwh_max
+ts__consumption_load_kwh_min
+ts__consumption_load_kwh_std
+ts__consumption_load_kwh_iqr
+ts__consumption_load_kwh_cv
+ts__consumption_load_kwh_peak_to_median
+ts__consumption_load_kwh_excess_above_p95
+ts__consumption_load_kwh_excess_above_p95_norm
+ts__consumption_load_kwh_time_above_p90
+ts__consumption_load_kwh_time_above_p95
+ts__consumption_load_kwh_spread_max_p95
+ts__consumption_load_kwh_spread_p95_p50
+ts__consumption_load_kwh_peak_load_share_p90
+ts__consumption_load_kwh_peak_load_share_p95
+ts__consumption_load_kwh_n_peak_events_p95
+ts__consumption_load_kwh_mean_peak_duration_p95
+ts__consumption_load_kwh_max_peak_duration_p95
+ts__consumption_load_kwh_skewness

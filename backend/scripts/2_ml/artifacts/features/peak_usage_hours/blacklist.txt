@@ -1,0 +1,2 @@
+# Blacklist für dieses Target: eine Feature-Zeile pro Zeile.
+# Redundanzen und nicht gewünschte Features (werden bei Reports ausgeschlossen).

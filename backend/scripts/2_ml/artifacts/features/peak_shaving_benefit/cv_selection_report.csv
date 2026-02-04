@@ -1,0 +1,14 @@
+feature,selected,ranking
+ts__consumption_load_kwh_mean,1,1
+pv_annual_total,0,2
+list_battery_usable_max_state,0,3
+pv_consumed_percentage,0,4
+ts__consumption_pv_pearson,0,5
+battery_usable_per_sum_pv,0,6
+battery_usable_per_sum_consumption,0,7
+static_grid_fees,0,8
+list_battery_proportion_hourly_max_load,0,9
+ts__consumption_load_kwh_peak_to_mean,0,10
+grid_fee_max_load_peak,0,11
+ts__usage_hours,0,12
+list_battery_num_annual_cycles,0,13

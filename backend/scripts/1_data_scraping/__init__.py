@@ -2,29 +2,21 @@
 Data Scraping Module
 ====================
 
-Tools for importing battery simulation data from various sources,
-including Google Drive mirrored folders.
+Import Metadaten + KPIs + Pfade (battery_configs, kpi_summary).
+Laden der 4 Zeitreihen-Spalten in timeseries_ml.
 
-Usage:
-    from data_scraping import GDriveImporter, scan_folder_structure
-    
-    # Import from Google Drive
-    importer = GDriveImporter()
-    importer.import_all()
-    
-    # Scan a folder to preview structure
-    from data_scraping import scan_folder_structure
-    scan_folder_structure("/path/to/folder")
+CLI: python -m 1_data_scraping.cli import-all
+     python -m 1_data_scraping.cli load-timeseries
 """
 
-from .config import GDRIVE_CONFIG, get_gdrive_path
+from .config import GDRIVE_CONFIG, get_gdrive_path, get_flex_cases_path
 from .gdrive_importer import GDriveImporter
-from .folder_scanner import scan_folder_structure, find_flex_cases
+from .timeseries_loader import load_timeseries_into_db
 
 __all__ = [
     "GDriveImporter",
-    "scan_folder_structure", 
-    "find_flex_cases",
+    "load_timeseries_into_db",
     "GDRIVE_CONFIG",
     "get_gdrive_path",
+    "get_flex_cases_path",
 ]

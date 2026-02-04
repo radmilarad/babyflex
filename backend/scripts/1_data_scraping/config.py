@@ -17,12 +17,13 @@ from typing import Optional
 GDRIVE_CONFIG = {
     # Base path to the locally mirrored Google Drive
     "base_path": (
-        "/Users/jonasgleissner/Library/CloudStorage/"
-        "GoogleDrive-jonas.gleissner@trawa.de/"
+        "/Users/luciacervino/Library/CloudStorage/"
+        "GoogleDrive-lucia.cervino@trawa.de/"
         ".shortcut-targets-by-id/1EYADLyWM0Pn5DptM4a9n5frnyGoAnzdp/17_Tech"
     ),
     
     # Path to flex cases folder (relative to base_path)
+    # Bei dir: 01_Flex_Cases (ohne " (2)")
     "flex_cases_folder": "38_Flex – Business Dev/01_Flex_Cases",
     
     # Subfolder within each client containing simulation runs
@@ -82,6 +83,12 @@ def get_gdrive_path(subpath: str = None) -> Path:
 def get_flex_cases_path() -> Path:
     """Get the full path to the flex cases folder."""
     return get_gdrive_path(GDRIVE_CONFIG["flex_cases_folder"])
+
+
+def get_flex_cases_path_both() -> tuple[Path, Path]:
+    """Beide Varianten: (01_Flex_Cases, 01_Flex_Cases (2))."""
+    base = get_gdrive_path("38_Flex – Business Dev")
+    return (base / "01_Flex_Cases", base / "01_Flex_Cases (2)")
 
 
 # ============================================================================

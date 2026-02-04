@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,38 +20,43 @@ from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 
 # -------------------------------------------------------------------
-# 🛠️ Fix Imports & Paths
+# 🛠️ Paths
 # -------------------------------------------------------------------
-# This file is in: backend/app/main.py
-# We want the root: backend/
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
-# Add 'backend' to python path so we can import the 'scripts' folder
+PREDICTION_DIR = BACKEND_ROOT / "scripts" / "3_prediction"
+FRONTEND_DATA_DIR = PREDICTION_DIR / "frontend_data"
+WORKING_DATA_DIR = PREDICTION_DIR / "working_data"
+
+INPUT_JSON_PATH = FRONTEND_DATA_DIR / "frontend_data.json"
+INPUT_CSV_PATH = FRONTEND_DATA_DIR / "input_load.csv"
+PREPROCESSED_CSV_PATH = FRONTEND_DATA_DIR / "input_load_preprocessed.csv"
+WORKING_FEATURES_PATH = WORKING_DATA_DIR / "features.json"
+OUTPUT_JSON_PATH = FRONTEND_DATA_DIR / "outputs_for_frontend.json"
+PREDICTION_DEBUG_PATH = FRONTEND_DATA_DIR / "prediction_debug.json"
+
+DB_FILE_PATH = BACKEND_ROOT / "scripts" / "database" / "battery_simulations.duckdb"
+
+FRONTEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
+WORKING_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# Add backend root so "scripts.*" imports work
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.append(str(BACKEND_ROOT))
 
-# Import from the scripts folder
+# -------------------------------------------------------------------
+# 🗃️ Optional DB (not required for prediction)
+# -------------------------------------------------------------------
+BatteryDatabase = None
+db = None
 try:
-    from scripts.battery_db import BatteryDatabase
-except ImportError as e:
-    print(f"❌ Error importing BatteryDatabase: {e}")
-    print(f"ℹ️  Python Path is: {sys.path}")
-    raise e
+    from scripts.battery_db import BatteryDatabase as _BatteryDatabase  # type: ignore
 
-# Define Paths relative to Backend Root
-PREDICTION_DIR = BACKEND_ROOT / "scripts" / "3_prediction"
-FRONTEND_DATA_DIR = PREDICTION_DIR / "frontend_data"
-INPUT_JSON_PATH = FRONTEND_DATA_DIR / "frontend_data.json"
-OUTPUT_JSON_PATH = FRONTEND_DATA_DIR / "outputs_for_frontend.json"
-DB_FILE_PATH = BACKEND_ROOT / "scripts" / "database" / "battery_simulations.duckdb"
-
-# Pipeline intermediate files used by your scripts
-PREPROCESSED_CSV_PATH = FRONTEND_DATA_DIR / "input_load_preprocessed.csv"
-WORKING_FEATURES_PATH = PREDICTION_DIR / "working_data" / "features.json"
-
-# Ensure dirs exist
-FRONTEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
-(PREDICTION_DIR / "working_data").mkdir(parents=True, exist_ok=True)
+    BatteryDatabase = _BatteryDatabase
+    DB_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    db = BatteryDatabase(str(DB_FILE_PATH))
+except Exception as e:
+    print(f"⚠️ DB disabled (BatteryDatabase import/init failed): {e}")
 
 # -------------------------------------------------------------------
 # 🔐 Load environment variables
@@ -66,7 +73,10 @@ if not ENET_USERNAME:
 # -------------------------------------------------------------------
 # ⚡ Enet Helper
 # -------------------------------------------------------------------
-ENET_BASE_URL = "https://ws.enet-navigator.de/netzentgelte/strom/rlm/adresse/belieferungszeitraum/jahresverbrauch"
+ENET_BASE_URL = (
+    "https://ws.enet-navigator.de/netzentgelte/strom/rlm/adresse/"
+    "belieferungszeitraum/jahresverbrauch"
+)
 
 
 def build_enet_rlm_url(
@@ -106,11 +116,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize DB
-DB_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-db = BatteryDatabase(str(DB_FILE_PATH))
-
-# Prevent concurrent pipeline runs (your scripts write shared filenames)
 PIPELINE_LOCK = asyncio.Lock()
 
 # -------------------------------------------------------------------
@@ -125,12 +130,13 @@ def _file_debug(p: Path) -> str:
 
 def _run_step(name: str, cmd: list[str]) -> subprocess.CompletedProcess:
     print(f"\n🧩 STEP: {name}")
+    print("CWD:", str(BACKEND_ROOT))
     print("CMD:", " ".join(cmd))
     res = subprocess.run(
         cmd,
         capture_output=True,
         text=True,
-        cwd=str(BACKEND_ROOT),  # critical: consistent working directory for relative paths in scripts
+        cwd=str(BACKEND_ROOT),
         env=os.environ.copy(),
     )
     print(f"RC={res.returncode}")
@@ -139,6 +145,13 @@ def _run_step(name: str, cmd: list[str]) -> subprocess.CompletedProcess:
     if res.stderr:
         print(f"--- {name} STDERR ---\n{res.stderr}\n--- END STDERR ---")
     return res
+
+
+def _raise_failed(step: str, res: subprocess.CompletedProcess) -> None:
+    msg = (res.stderr or res.stdout or "").strip()
+    if not msg:
+        msg = "No stdout/stderr captured."
+    raise HTTPException(status_code=500, detail=f"{step} failed (rc={res.returncode}): {msg[:2000]}")
 
 
 # -------------------------------------------------------------------
@@ -151,7 +164,13 @@ def index():
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "pipeline_ready": PREDICTION_DIR.exists()}
+    return {
+        "status": "ok",
+        "pipeline_ready": PREDICTION_DIR.exists(),
+        "backend_root": str(BACKEND_ROOT.resolve()),
+        "prediction_dir": str(PREDICTION_DIR.resolve()),
+        "db_enabled": db is not None,
+    }
 
 
 @app.get("/api/enet-gridfee")
@@ -178,7 +197,6 @@ def get_enet_gridfee(
             raise HTTPException(status_code=401, detail="Enet Authentication failed")
         res.raise_for_status()
         return res.json()
-
     except requests.exceptions.RequestException as e:
         print(f"❌ Enet Network Error: {e}")
         raise HTTPException(status_code=500, detail=f"Enet request failed: {str(e)}")
@@ -193,19 +211,20 @@ def get_simulation_timeseries():
     if not FRONTEND_DATA_DIR.exists():
         raise HTTPException(status_code=404, detail="Data directory not found")
 
-    files = list(FRONTEND_DATA_DIR.glob("*_preprocessed.csv"))
-    if not files:
-        raise HTTPException(status_code=404, detail="No preprocessed timeseries found.")
-    target_file = sorted(files, key=lambda f: f.stat().st_mtime, reverse=True)[0]
+    # Prefer the fixed filename we produce, else fall back to newest *_preprocessed.csv
+    target_file = PREPROCESSED_CSV_PATH
+    if not target_file.exists():
+        files = list(FRONTEND_DATA_DIR.glob("*_preprocessed.csv"))
+        if not files:
+            raise HTTPException(status_code=404, detail="No preprocessed timeseries found.")
+        target_file = sorted(files, key=lambda f: f.stat().st_mtime, reverse=True)[0]
 
     try:
         df = pd.read_csv(target_file)
         if "timestamp_utc" in df.columns:
-            numeric_cols = df.select_dtypes(include=["float64", "float32"]).columns
+            numeric_cols = df.select_dtypes(include=["float64", "float32", "int64", "int32"]).columns
             df[numeric_cols] = df[numeric_cols].round(2)
-            df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"]).dt.strftime(
-                "%Y-%m-%dT%H:%M:%SZ"
-            )
+            df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"]).dt.strftime("%Y-%m-%dT%H:%M:%SZ")
         return {"filename": target_file.name, "data": df.to_dict(orient="records")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to read CSV: {str(e)}")
@@ -225,77 +244,68 @@ async def submit_simulation(
     client_name, run_name = "Web_Submission", f"Run_{uuid.uuid4().hex[:8]}"
     python_exec = sys.executable
 
-    # 1) Save File (shared filename that downstream scripts expect)
-    input_csv_path = FRONTEND_DATA_DIR / "input_load.csv"
+    # 1) Save upload
     try:
-        with open(input_csv_path, "wb") as buffer:
+        with open(INPUT_CSV_PATH, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         return JSONResponse(status_code=500, content={"detail": f"Failed to save file: {str(e)}"})
 
-    # 2) Save Parameters
+    # 2) Write inputs json
     params = {
-        "list_battery_usable_max_state": list_battery_usable_max_state,
-        "list_battery_num_annual_cycles": list_battery_num_annual_cycles,
-        "list_battery_proportion_hourly_max_load": list_battery_proportion_hourly_max_load,
-        "pv_peak_power": pv_peak_power,
-        "pv_consumed_percentage": pv_consumed_percentage,
-        "static_grid_fees": static_grid_fees,
-        "grid_fee_max_load_peak": grid_fee_max_load_peak,
-        "pv_annual_total": pv_peak_power * 1000,
-        "working_price_eur_per_kwh": static_grid_fees,
-        "power_price_eur_per_kw": grid_fee_max_load_peak,
-        "list_battery_max_state": list_battery_usable_max_state / 0.92,
+        "list_battery_usable_max_state": float(list_battery_usable_max_state),
+        "list_battery_num_annual_cycles": float(list_battery_num_annual_cycles),
+        "list_battery_proportion_hourly_max_load": float(list_battery_proportion_hourly_max_load),
+        "pv_peak_power": float(pv_peak_power),
+        "pv_consumed_percentage": float(pv_consumed_percentage),
+        "static_grid_fees": float(static_grid_fees),
+        "grid_fee_max_load_peak": float(grid_fee_max_load_peak),
+        # convenience (your other scripts use these)
+        "pv_annual_total": float(pv_peak_power) * 1000.0,
+        "working_price_eur_per_kwh": float(static_grid_fees),
+        "power_price_eur_per_kw": float(grid_fee_max_load_peak),
+        "list_battery_max_state": float(list_battery_usable_max_state) / 0.92,
         "list_battery_efficiency": 0.92,
         "list_battery_usability": 0.92,
     }
-
     with open(INPUT_JSON_PATH, "w") as f:
         json.dump(params, f, indent=2)
 
-    # 3) Run Pipeline Scripts (serialized + no stale outputs)
+    # 3) Run pipeline in order (preprocess -> features -> predict)
     async with PIPELINE_LOCK:
         print("\n" + "=" * 80)
         print(f"🚀 Starting Prediction Pipeline for {run_name} @ {datetime.now().isoformat()}")
-        print("INPUT CSV:", _file_debug(input_csv_path))
+        print("INPUT CSV:", _file_debug(INPUT_CSV_PATH))
         print("INPUT JSON:", _file_debug(INPUT_JSON_PATH))
 
-        # Delete stale artifacts so you never return old numbers
-        if OUTPUT_JSON_PATH.exists():
-            OUTPUT_JSON_PATH.unlink()
-            print(f"🧹 Deleted stale output: {OUTPUT_JSON_PATH}")
+        # delete stale outputs
+        for p in [OUTPUT_JSON_PATH, PREDICTION_DEBUG_PATH, WORKING_FEATURES_PATH, PREPROCESSED_CSV_PATH]:
+            if p.exists():
+                p.unlink()
+                print(f"🧹 Deleted stale: {p}")
 
-        if PREPROCESSED_CSV_PATH.exists():
-            PREPROCESSED_CSV_PATH.unlink()
-            print(f"🧹 Deleted stale preprocessed: {PREPROCESSED_CSV_PATH}")
-
-        if WORKING_FEATURES_PATH.exists():
-            WORKING_FEATURES_PATH.unlink()
-            print(f"🧹 Deleted stale features: {WORKING_FEATURES_PATH}")
-
-        # Step 1: Preprocess
+        # Step 1: Preprocess (FORCE output filename so backend knows where it is)
         proc_res = _run_step(
-            "preprocess",
+            "preprocess_load_and_pv",
             [
                 python_exec,
                 str(PREDICTION_DIR / "preprocess_load_and_pv.py"),
                 "--load",
-                str(input_csv_path),
+                str(INPUT_CSV_PATH),
                 "--inputs",
                 str(INPUT_JSON_PATH),
+                "--output",
+                str(PREPROCESSED_CSV_PATH),
             ],
         )
         if proc_res.returncode != 0:
-            raise HTTPException(status_code=500, detail=f"Preprocess failed: {proc_res.stderr}")
+            _raise_failed("Preprocess", proc_res)
 
         print("PREPROCESSED CSV:", _file_debug(PREPROCESSED_CSV_PATH))
         if not PREPROCESSED_CSV_PATH.exists():
-            raise HTTPException(
-                status_code=500,
-                detail="Preprocess did not produce input_load_preprocessed.csv (file missing).",
-            )
+            raise HTTPException(status_code=500, detail="Preprocess did not create input_load_preprocessed.csv")
 
-        # Step 2: Features
+        # Step 2: Features (FORCE output path)
         feat_res = _run_step(
             "calculate_features",
             [
@@ -305,23 +315,20 @@ async def submit_simulation(
                 str(PREPROCESSED_CSV_PATH),
                 "--inputs",
                 str(INPUT_JSON_PATH),
+                "--output",
+                str(WORKING_FEATURES_PATH),
             ],
         )
         if feat_res.returncode != 0:
-            raise HTTPException(
-                status_code=500, detail=f"Feature calculation failed: {feat_res.stderr}"
-            )
+            _raise_failed("Feature calculation", feat_res)
 
         print("FEATURES JSON:", _file_debug(WORKING_FEATURES_PATH))
         if not WORKING_FEATURES_PATH.exists():
-            raise HTTPException(
-                status_code=500,
-                detail="calculate_features did not produce working_data/features.json (file missing).",
-            )
+            raise HTTPException(status_code=500, detail="calculate_features did not create working_data/features.json")
 
-        # Step 3: Predict (✅ pass explicit features + output paths)
+        # Step 3: Predict (write outputs + debug)
         pred_res = _run_step(
-            "predict",
+            "predict_buckets",
             [
                 python_exec,
                 str(PREDICTION_DIR / "predict_buckets.py"),
@@ -329,39 +336,51 @@ async def submit_simulation(
                 str(WORKING_FEATURES_PATH),
                 "--output",
                 str(OUTPUT_JSON_PATH),
+                "--debug",
+                "--debug-out",
+                str(PREDICTION_DEBUG_PATH),
             ],
         )
         if pred_res.returncode != 0:
-            raise HTTPException(status_code=500, detail=f"Prediction failed: {pred_res.stderr}")
+            _raise_failed("Prediction", pred_res)
 
         print("OUTPUT JSON:", _file_debug(OUTPUT_JSON_PATH))
+        print("DEBUG JSON:", _file_debug(PREDICTION_DEBUG_PATH))
         if not OUTPUT_JSON_PATH.exists():
-            raise HTTPException(
-                status_code=500,
-                detail="Predict did not produce outputs_for_frontend.json (file missing).",
-            )
+            raise HTTPException(status_code=500, detail="Predict did not create outputs_for_frontend.json")
 
-    # 4) Read Results (no silent fallback)
+    # 4) Read results
     try:
-        print(f"📖 Reading results from: {OUTPUT_JSON_PATH}")
         with open(OUTPUT_JSON_PATH, "r") as f:
             data = json.load(f)
         results = {k: (v if v is not None else 0) for k, v in data.items()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading prediction results: {str(e)}")
 
-    # 5) DB Logging
-    try:
-        db.add_run(client_name, run_name, "Web Submission", params, datetime.now())
-        db.add_battery_config(
-            client_name,
-            run_name,
-            f"{int(list_battery_usable_max_state)}kWh",
-            False,
-            list_battery_usable_max_state,
-            list_battery_usable_max_state * list_battery_proportion_hourly_max_load,
-        )
-    except Exception as e:
-        print(f"⚠️ DB logging failed (ignored): {e}")
+    # 5) Optional DB logging (won't break API)
+    if db is not None:
+        try:
+            db.add_run(client_name, run_name, "Web Submission", params, datetime.now())
+            db.add_battery_config(
+                client_name,
+                run_name,
+                f"{int(list_battery_usable_max_state)}kWh",
+                False,
+                list_battery_usable_max_state,
+                list_battery_usable_max_state * list_battery_proportion_hourly_max_load,
+            )
+        except Exception as e:
+            print(f"⚠️ DB logging failed (ignored): {e}")
 
-    return {"message": "Success", "run_id": run_name, "results": results}
+    return {
+        "message": "Success",
+        "run_id": run_name,
+        "results": results,
+        # helpful during debugging; remove later if you want
+        "debug": {
+            "preprocessed_csv": str(PREPROCESSED_CSV_PATH.resolve()),
+            "features_json": str(WORKING_FEATURES_PATH.resolve()),
+            "outputs_json": str(OUTPUT_JSON_PATH.resolve()),
+            "prediction_debug_json": str(PREDICTION_DEBUG_PATH.resolve()),
+        },
+    }

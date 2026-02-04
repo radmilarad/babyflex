@@ -3,7 +3,7 @@ Feature Extraction Logic
 ========================
 
 All timeseries feature calculations live here.
-- Config (2_ml/config.py): nur Eingaben – welche Spalten, stats, custom-Namen.
+- Config (2_ml/config_feature_extraction.py): nur Eingaben – welche Spalten, stats, custom-Namen.
 - Logik für Zeitreihen-Aggregationen: 2_ml/extraction/timeseries_aggregations.py.
 
 Neue Features: Namen in config.TIMESERIES_* eintragen, Implementierung in
@@ -33,14 +33,14 @@ class BaseFeatureExtractor(ABC):
 class ConfigBasedFeatures(BaseFeatureExtractor):
     """
     Extract features from config (data) + timeseries_aggregations (logic).
-    Config: 2_ml/config.py (TIMESERIES_COLUMN_SPECS, TIMESERIES_DF_FEATURE_NAMES).
+    Config: 2_ml/config_feature_extraction.py (TIMESERIES_COLUMN_SPECS, TIMESERIES_DF_FEATURE_NAMES).
     """
     name = "ts"
 
     def extract(self, df: pd.DataFrame) -> Dict[str, float]:
         """Extract all features from config-driven timeseries aggregations."""
         try:
-            from ..config import TIMESERIES_COLUMN_SPECS, TIMESERIES_DF_FEATURE_NAMES
+            from ..config_feature_extraction import TIMESERIES_COLUMN_SPECS, TIMESERIES_DF_FEATURE_NAMES
             from .timeseries_aggregations import extract_all_from_config
             return extract_all_from_config(
                 df, TIMESERIES_COLUMN_SPECS, TIMESERIES_DF_FEATURE_NAMES

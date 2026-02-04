@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 import pandas as pd
 
-from battery_db import BatteryDatabase
+from core.battery_db import BatteryDatabase
 from .config import GDRIVE_CONFIG, IMPORT_SETTINGS, get_flex_cases_path
 
 
@@ -445,14 +445,17 @@ class GDriveImporter:
             if not kpi_name or kpi_name == 'nan':
                 continue
             
-            # Convert to float
+            # Convert to float (strip brackets "[...]" from sheet values like "[387.0]")
             kpi_value = None
             if pd.notna(raw_value):
                 if isinstance(raw_value, (int, float)):
                     kpi_value = float(raw_value)
                 elif isinstance(raw_value, str):
+                    s = raw_value.strip()
+                    if s.startswith("[") and s.endswith("]"):
+                        s = s[1:-1].strip()
                     try:
-                        kpi_value = float(raw_value.strip())
+                        kpi_value = float(s)
                     except ValueError:
                         continue
             

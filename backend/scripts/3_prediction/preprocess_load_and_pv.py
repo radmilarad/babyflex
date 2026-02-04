@@ -15,9 +15,10 @@ Preprocessing: Load + PV → grid_load_kwh, consumption_kwh
    scale PV self-consumption per weekday to match grid-load weekday shares; then:
    - grid_load_kwh: original load from grid (kWh per 15-min)
    - consumption_kwh: grid_load_kwh + scaled PV (kWh per 15-min)
-   - pv_load_kwh: scaled PV self-consumption (kWh per 15-min)
+   - pv_load_kwh: entire simulated PV generation (kWh per 15-min)
+   - pv_load_kwh_ownconsumption: scaled PV self-consumption / Eigenverbrauch (kWh per 15-min)
 
-Output: CSV with columns timestamp_utc, grid_load_kwh, consumption_kwh, pv_load_kwh.
+Output: CSV with columns timestamp_utc, grid_load_kwh, consumption_kwh, pv_load_kwh, pv_load_kwh_ownconsumption.
 Saved to frontend_data/ by default (for UI consumption).
 
 Usage (from project root or 3_prediction):
@@ -195,14 +196,18 @@ def merge_load_and_pv(
     )
 
     merged = df_load.merge(
-        df_pv[["timestamp_utc", "pv_scaled_kwh"]],
+        df_pv[["timestamp_utc", "pv_generation_kwh", "pv_scaled_kwh"]],
         on="timestamp_utc",
         how="left",
     )
+    merged["pv_generation_kwh"] = merged["pv_generation_kwh"].fillna(0)
     merged["pv_scaled_kwh"] = merged["pv_scaled_kwh"].fillna(0)
     merged["consumption_kwh"] = merged["grid_load_kwh"] + merged["pv_scaled_kwh"]
-    merged["pv_load_kwh"] = merged["pv_scaled_kwh"]
-    return merged[["timestamp_utc", "grid_load_kwh", "consumption_kwh", "pv_load_kwh"]]
+    merged["pv_load_kwh"] = merged["pv_generation_kwh"]
+    merged["pv_load_kwh_ownconsumption"] = merged["pv_scaled_kwh"]
+    return merged[
+        ["timestamp_utc", "grid_load_kwh", "consumption_kwh", "pv_load_kwh", "pv_load_kwh_ownconsumption"]
+    ]
 
 
 # -----------------------------------------------------------------------------
@@ -263,7 +268,7 @@ def main():
     df_out = merge_load_and_pv(df_load, df_pv, pv_consumed_percentage=pv_consumed)
     print(f"Consumption (grid + PV): {df_out['consumption_kwh'].sum():,.2f} kWh total")
 
-    # Output: save to/ with columns grid_load_kwh, consumption_kwh, pv_load_kwh (all kWh)
+    # Output: save with columns grid_load_kwh, consumption_kwh, pv_load_kwh, pv_load_kwh_ownconsumption (all kWh)
     output_dir = script_dir / "frontend_data"
     if args.output is None:
         args.output = output_dir / (load_path.stem + "_preprocessed.csv")

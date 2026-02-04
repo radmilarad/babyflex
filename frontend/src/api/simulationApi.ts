@@ -1,4 +1,6 @@
-const API_BASE = 'https://babyflex-api.onrender.com/api';
+import {VITE_API_URL} from "../../config";
+
+const API_BASE = VITE_API_URL;
 
 export const submitSimulation = async (formData: any) => {
     const payload = new FormData();

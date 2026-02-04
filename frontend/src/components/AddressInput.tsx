@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import {VITE_API_URL} from "../../config";
 
 interface AddressInputProps {
     onGridFeeFetched?: (data: any) => void;
@@ -84,7 +85,7 @@ const AddressInput: React.FC<AddressInputProps> = ({ onGridFeeFetched }) => {
 
             console.log("📡 Fetching Grid Data for:", params.toString());
             const res = await fetch(
-                `https://babyflex-api.onrender.com/api/enet-gridfee?${params.toString()}`
+                `${VITE_API_URL}/enet-gridfee?${params.toString()}`
             );
 
             if (!res.ok) {

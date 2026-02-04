@@ -9,6 +9,7 @@ import { ChartDataPoint, SimulationWaterfallResults } from './types';
 
 const App = () => {
     const [chartData, setChartData] = useState<ChartDataPoint[] | null>(null);
+    const [headerChartData, setHeaderChartData] = useState<any | null>(null);
     const [waterfallData, setWaterfallData] = useState<SimulationWaterfallResults | null>(null);
     const [loading, setLoading] = useState(false);
     const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -44,6 +45,13 @@ const App = () => {
                     trading: result.results.trading_revenue || 0,
                     warning: result.results.warning || undefined,
                 });
+                setHeaderChartData({
+                    total_grid_load_kwh: result.results.total_grid_load_kwh,
+                    peak_grid_load_kwh: result.results.peak_grid_load_kwh,
+                    usage_hours_h: result.results.usage_hours_h,
+                    pv_generation_kwh: result.results.pv_generation_kwh,
+                    estimated_consumption_kwh: result.results.estimated_consumption_kwh,
+                })
                 setHasSubmitted(true);
 
                 // C. Fetch & Update Chart with Simulated Data
@@ -107,7 +115,7 @@ const App = () => {
                             <p className="text-gray-500 text-sm mb-6">
                                 {waterfallData ? "Simuliertes Profil (Inkl. PV)" : "Durchschnittliches wöchentliches Verbrauchsverhalten (Input)"}
                             </p>
-                            <WeeklyHighResChart data={chartData} />
+                            <WeeklyHighResChart data={chartData} headerChartData={headerChartData} />
                         </div>
 
                         {/* Waterfall */}

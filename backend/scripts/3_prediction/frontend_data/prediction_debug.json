@@ -8,27 +8,27 @@
   },
   "empty_feature_names": [],
   "predictions": {
-    "peak_shaving_benefit": -26256.12244506761,
-    "energy_procurement_optimization": 16940.17973584905,
-    "trading_revenue": 32367.905320207687
+    "peak_shaving_benefit": -24305.77500098535,
+    "energy_procurement_optimization": 25069.797529299783,
+    "trading_revenue": 36068.792661830856
   },
   "features_detail": [
     {
       "name": "list_battery_usable_max_state",
-      "value_used": 250.0,
+      "value_used": 342.0,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 250.0,
+      "value_in_features": 342.0,
       "importance_peak_shaving_benefit": 0.020938,
       "importance_energy_procurement_optimization": 0.708179,
       "importance_trading_revenue": 0.942104
     },
     {
       "name": "list_battery_num_annual_cycles",
-      "value_used": 400.0,
+      "value_used": 342.0,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 400.0,
+      "value_in_features": 342.0,
       "importance_peak_shaving_benefit": 0.00017,
       "importance_energy_procurement_optimization": 0.000739,
       "importance_trading_revenue": 0.000468
@@ -45,20 +45,20 @@
     },
     {
       "name": "pv_annual_total",
-      "value_used": 250000.0,
+      "value_used": 234000.0,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 250000.0,
+      "value_in_features": 234000.0,
       "importance_peak_shaving_benefit": 0.002327,
       "importance_energy_procurement_optimization": 0.001267,
       "importance_trading_revenue": 0.000981
     },
     {
       "name": "pv_consumed_percentage",
-      "value_used": 0.8,
+      "value_used": 0.22,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.8,
+      "value_in_features": 0.22,
       "importance_peak_shaving_benefit": 0.002095,
       "importance_energy_procurement_optimization": 0.002031,
       "importance_trading_revenue": 0.001079
@@ -85,20 +85,20 @@
     },
     {
       "name": "ts__consumption_load_kwh_mean",
-      "value_used": 25.26609865931249,
+      "value_used": 21.039095016325238,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 25.26609865931249,
+      "value_in_features": 21.039095016325238,
       "importance_peak_shaving_benefit": 0.003502,
       "importance_energy_procurement_optimization": 0.024769,
       "importance_trading_revenue": 0.001607
     },
     {
       "name": "ts__consumption_load_kwh_std",
-      "value_used": 25.285236741190765,
+      "value_used": 20.440535843400845,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 25.285236741190765,
+      "value_in_features": 20.440535843400845,
       "importance_peak_shaving_benefit": 0.264292,
       "importance_energy_procurement_optimization": 0.018375,
       "importance_trading_revenue": 0.004267
@@ -115,150 +115,150 @@
     },
     {
       "name": "ts__consumption_load_kwh_max",
-      "value_used": 108.02990942542236,
+      "value_used": 89.69030350561322,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 108.02990942542236,
+      "value_in_features": 89.69030350561322,
       "importance_peak_shaving_benefit": 0.03179,
       "importance_energy_procurement_optimization": 0.042356,
       "importance_trading_revenue": 0.003901
     },
     {
       "name": "ts__consumption_load_kwh_sum",
-      "value_used": 887749.6424936036,
+      "value_used": 739229.6424936035,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 887749.6424936036,
+      "value_in_features": 739229.6424936035,
       "importance_peak_shaving_benefit": 0.01549,
       "importance_energy_procurement_optimization": 0.022148,
       "importance_trading_revenue": 0.000538
     },
     {
       "name": "ts__consumption_load_kwh_p10",
-      "value_used": 1.34,
+      "value_used": 1.3,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 1.34,
+      "value_in_features": 1.3,
       "importance_peak_shaving_benefit": 0.002189,
       "importance_energy_procurement_optimization": 0.001176,
       "importance_trading_revenue": 0.004778
     },
     {
       "name": "ts__consumption_load_kwh_p25",
-      "value_used": 2.62,
+      "value_used": 2.276103150221853,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 2.62,
+      "value_in_features": 2.276103150221853,
       "importance_peak_shaving_benefit": 0.007236,
       "importance_energy_procurement_optimization": 0.00529,
       "importance_trading_revenue": 0.000652
     },
     {
       "name": "ts__consumption_load_kwh_p50",
-      "value_used": 11.998717405839795,
+      "value_used": 11.59,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 11.998717405839795,
+      "value_in_features": 11.59,
       "importance_peak_shaving_benefit": 0.000896,
       "importance_energy_procurement_optimization": 0.00039,
       "importance_trading_revenue": 0.004471
     },
     {
       "name": "ts__consumption_load_kwh_p75",
-      "value_used": 43.43110489241776,
+      "value_used": 38.55,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 43.43110489241776,
+      "value_in_features": 38.55,
       "importance_peak_shaving_benefit": 0.000787,
       "importance_energy_procurement_optimization": 0.003459,
       "importance_trading_revenue": 0.00031
     },
     {
       "name": "ts__consumption_load_kwh_p90",
-      "value_used": 63.38411401062042,
+      "value_used": 49.16368801400962,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 63.38411401062042,
+      "value_in_features": 49.16368801400962,
       "importance_peak_shaving_benefit": 0.009862,
       "importance_energy_procurement_optimization": 0.014734,
       "importance_trading_revenue": 0.003635
     },
     {
       "name": "ts__consumption_load_kwh_p95",
-      "value_used": 74.97013166694875,
+      "value_used": 57.73416076410487,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 74.97013166694875,
+      "value_in_features": 57.73416076410487,
       "importance_peak_shaving_benefit": 0.016137,
       "importance_energy_procurement_optimization": 0.030118,
       "importance_trading_revenue": 0.002627
     },
     {
       "name": "ts__consumption_load_kwh_peak_to_mean",
-      "value_used": 4.275686202373198,
+      "value_used": 4.263030488527107,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 4.275686202373198,
+      "value_in_features": 4.263030488527107,
       "importance_peak_shaving_benefit": 0.008652,
       "importance_energy_procurement_optimization": 0.007589,
       "importance_trading_revenue": 6.2e-05
     },
     {
       "name": "ts__consumption_load_kwh_peak_to_median",
-      "value_used": 9.003454766994015,
+      "value_used": 7.738593917654289,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 9.003454766994015,
+      "value_in_features": 7.738593917654289,
       "importance_peak_shaving_benefit": 0.000248,
       "importance_energy_procurement_optimization": 2.4e-05,
       "importance_trading_revenue": 0.000108
     },
     {
       "name": "ts__consumption_load_kwh_cv",
-      "value_used": 1.0007574609019119,
+      "value_used": 0.9715501464079161,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 1.0007574609019119,
+      "value_in_features": 0.9715501464079161,
       "importance_peak_shaving_benefit": 0.005815,
       "importance_energy_procurement_optimization": 0.00358,
       "importance_trading_revenue": 0.00128
     },
     {
       "name": "ts__consumption_load_kwh_iqr",
-      "value_used": 40.81110489241776,
+      "value_used": 36.27389684977815,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 40.81110489241776,
+      "value_in_features": 36.27389684977815,
       "importance_peak_shaving_benefit": 0.229766,
       "importance_energy_procurement_optimization": 0.001989,
       "importance_trading_revenue": 0.000352
     },
     {
       "name": "ts__consumption_load_kwh_skewness",
-      "value_used": 0.8099500796109286,
+      "value_used": 0.690238237096151,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.8099500796109286,
+      "value_in_features": 0.690238237096151,
       "importance_peak_shaving_benefit": 0.013607,
       "importance_energy_procurement_optimization": 0.00623,
       "importance_trading_revenue": 7.4e-05
     },
     {
       "name": "ts__consumption_load_kwh_excess_above_p95",
-      "value_used": 33.059777758473615,
+      "value_used": 31.956142741508344,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 33.059777758473615,
+      "value_in_features": 31.956142741508344,
       "importance_peak_shaving_benefit": 0.225205,
       "importance_energy_procurement_optimization": 0.001858,
       "importance_trading_revenue": 0.004243
     },
     {
       "name": "ts__consumption_load_kwh_excess_above_p95_norm",
-      "value_used": 1.308463890854339,
+      "value_used": 1.5188934085193326,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 1.308463890854339,
+      "value_in_features": 1.5188934085193326,
       "importance_peak_shaving_benefit": 6.1e-05,
       "importance_energy_procurement_optimization": 0.008723,
       "importance_trading_revenue": 0.000248
@@ -285,90 +285,90 @@
     },
     {
       "name": "ts__consumption_load_kwh_spread_p95_p50",
-      "value_used": 5.2481787953819685,
+      "value_used": 3.9813771151082715,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 5.2481787953819685,
+      "value_in_features": 3.9813771151082715,
       "importance_peak_shaving_benefit": 0.000622,
       "importance_energy_procurement_optimization": 0.000163,
       "importance_trading_revenue": 0.000176
     },
     {
       "name": "ts__consumption_load_kwh_spread_max_p95",
-      "value_used": 0.4409726516866758,
+      "value_used": 0.553504932237215,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.4409726516866758,
+      "value_in_features": 0.553504932237215,
       "importance_peak_shaving_benefit": 0.000607,
       "importance_energy_procurement_optimization": 0.001113,
       "importance_trading_revenue": 0.000264
     },
     {
       "name": "ts__consumption_load_kwh_peak_load_share_p90",
-      "value_used": 0.3020037293776941,
+      "value_used": 0.2840966610434877,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.3020037293776941,
+      "value_in_features": 0.2840966610434877,
       "importance_peak_shaving_benefit": 0.030751,
       "importance_energy_procurement_optimization": 0.002843,
       "importance_trading_revenue": 0.00046
     },
     {
       "name": "ts__consumption_load_kwh_peak_load_share_p95",
-      "value_used": 0.16561010800129355,
+      "value_used": 0.15787902127030357,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.16561010800129355,
+      "value_in_features": 0.15787902127030357,
       "importance_peak_shaving_benefit": 0.027603,
       "importance_energy_procurement_optimization": 0.001575,
       "importance_trading_revenue": 0.000309
     },
     {
       "name": "ts__consumption_load_kwh_n_peak_events_p95",
-      "value_used": 385.0,
+      "value_used": 389.0,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 385.0,
+      "value_in_features": 389.0,
       "importance_peak_shaving_benefit": 0.006609,
       "importance_energy_procurement_optimization": 0.00208,
       "importance_trading_revenue": 9.2e-05
     },
     {
       "name": "ts__consumption_load_kwh_mean_peak_duration_p95",
-      "value_used": 4.5636363636363635,
+      "value_used": 4.5167095115681235,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 4.5636363636363635,
+      "value_in_features": 4.5167095115681235,
       "importance_peak_shaving_benefit": 0.019715,
       "importance_energy_procurement_optimization": 0.001225,
       "importance_trading_revenue": 6.5e-05
     },
     {
       "name": "ts__consumption_load_kwh_max_peak_duration_p95",
-      "value_used": 39.0,
+      "value_used": 44.0,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 39.0,
+      "value_in_features": 44.0,
       "importance_peak_shaving_benefit": 0.004961,
       "importance_energy_procurement_optimization": 0.000221,
       "importance_trading_revenue": 0.000916
     },
     {
       "name": "ts__pv_load_kwh_mean",
-      "value_used": 7.115209471766849,
+      "value_used": 6.659836065573771,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 7.115209471766849,
+      "value_in_features": 6.659836065573771,
       "importance_peak_shaving_benefit": 0.000136,
       "importance_energy_procurement_optimization": 0.000937,
       "importance_trading_revenue": 7.2e-05
     },
     {
       "name": "ts__pv_load_kwh_std",
-      "value_used": 9.514924005574862,
+      "value_used": 8.905968869218071,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 9.514924005574862,
+      "value_in_features": 8.905968869218071,
       "importance_peak_shaving_benefit": 9.7e-05,
       "importance_energy_procurement_optimization": 0.004875,
       "importance_trading_revenue": 0.000779
@@ -385,20 +385,20 @@
     },
     {
       "name": "ts__pv_load_kwh_max",
-      "value_used": 25.068482465486188,
+      "value_used": 23.46409958769507,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 25.068482465486188,
+      "value_in_features": 23.46409958769507,
       "importance_peak_shaving_benefit": 0.000145,
       "importance_energy_procurement_optimization": 0.000249,
       "importance_trading_revenue": 0.000327
     },
     {
       "name": "ts__pv_load_kwh_sum",
-      "value_used": 250000.0,
+      "value_used": 234000.0,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 250000.0,
+      "value_in_features": 234000.0,
       "importance_peak_shaving_benefit": 0.000162,
       "importance_energy_procurement_optimization": 0.000102,
       "importance_trading_revenue": 2e-05
@@ -435,40 +435,40 @@
     },
     {
       "name": "ts__pv_load_kwh_p75",
-      "value_used": 14.042229160472079,
+      "value_used": 13.143526494201868,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 14.042229160472079,
+      "value_in_features": 13.143526494201868,
       "importance_peak_shaving_benefit": 0.000122,
       "importance_energy_procurement_optimization": 0.000141,
       "importance_trading_revenue": 0.000182
     },
     {
       "name": "ts__pv_load_kwh_p90",
-      "value_used": 25.068482465486188,
+      "value_used": 23.46409958769507,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 25.068482465486188,
+      "value_in_features": 23.46409958769507,
       "importance_peak_shaving_benefit": 0.000367,
       "importance_energy_procurement_optimization": 0.00063,
       "importance_trading_revenue": 0.000159
     },
     {
       "name": "ts__pv_load_kwh_p95",
-      "value_used": 25.068482465486188,
+      "value_used": 23.46409958769507,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 25.068482465486188,
+      "value_in_features": 23.46409958769507,
       "importance_peak_shaving_benefit": 0.000616,
       "importance_energy_procurement_optimization": 0.000793,
       "importance_trading_revenue": 6.1e-05
     },
     {
       "name": "ts__pv_load_kwh_peak_to_mean",
-      "value_used": 3.5232247996292907,
+      "value_used": 3.5232247996292902,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 3.5232247996292907,
+      "value_in_features": 3.5232247996292902,
       "importance_peak_shaving_benefit": 7.6e-05,
       "importance_energy_procurement_optimization": 0.000389,
       "importance_trading_revenue": 0.000325
@@ -485,100 +485,100 @@
     },
     {
       "name": "ts__pv_load_kwh_iqr",
-      "value_used": 14.042229160472079,
+      "value_used": 13.143526494201868,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 14.042229160472079,
+      "value_in_features": 13.143526494201868,
       "importance_peak_shaving_benefit": 0.000365,
       "importance_energy_procurement_optimization": 4e-05,
       "importance_trading_revenue": 0.00048
     },
     {
       "name": "ts__pv_load_kwh_skewness",
-      "value_used": 0.9464519785459162,
+      "value_used": 0.9464519785459163,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.9464519785459162,
+      "value_in_features": 0.9464519785459163,
       "importance_peak_shaving_benefit": 1e-06,
       "importance_energy_procurement_optimization": 0.000104,
       "importance_trading_revenue": 0.000263
     },
     {
       "name": "ts__consumption_pv_pearson",
-      "value_used": 0.5369066949372487,
+      "value_used": 0.38776399784703836,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.5369066949372487,
+      "value_in_features": 0.38776399784703836,
       "importance_peak_shaving_benefit": 0.00024,
       "importance_energy_procurement_optimization": 6.6e-05,
       "importance_trading_revenue": 0.000688
     },
     {
       "name": "ts__consumption_pv_spearman",
-      "value_used": 0.5321147591884573,
+      "value_used": 0.4199615292472659,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.5321147591884573,
+      "value_in_features": 0.4199615292472659,
       "importance_peak_shaving_benefit": 0.00171,
       "importance_energy_procurement_optimization": 0.000341,
       "importance_trading_revenue": 0.000714
     },
     {
       "name": "ts__consumption_pv_r2",
-      "value_used": 0.2882687990684399,
+      "value_used": 0.15036091802631796,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.2882687990684399,
+      "value_in_features": 0.15036091802631796,
       "importance_peak_shaving_benefit": 0.011232,
       "importance_energy_procurement_optimization": 0.000187,
       "importance_trading_revenue": 0.00039
     },
     {
       "name": "ts__consumption_da_pearson",
-      "value_used": 0.07743720055964323,
+      "value_used": 0.14236514170748885,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.07743720055964323,
+      "value_in_features": 0.14236514170748885,
       "importance_peak_shaving_benefit": 0.001277,
       "importance_energy_procurement_optimization": 0.000231,
       "importance_trading_revenue": 0.000584
     },
     {
       "name": "ts__consumption_da_spearman",
-      "value_used": 0.07462260749001924,
+      "value_used": 0.1299140418652168,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.07462260749001924,
+      "value_in_features": 0.1299140418652168,
       "importance_peak_shaving_benefit": 0.004845,
       "importance_energy_procurement_optimization": 0.001844,
       "importance_trading_revenue": 0.000149
     },
     {
       "name": "ts__consumption_da_r2",
-      "value_used": 0.00599652003051441,
+      "value_used": 0.02026783357339338,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.00599652003051441,
+      "value_in_features": 0.02026783357339338,
       "importance_peak_shaving_benefit": 0.002556,
       "importance_energy_procurement_optimization": 0.001967,
       "importance_trading_revenue": 0.000163
     },
     {
       "name": "battery_usable_per_sum_pv",
-      "value_used": 0.001,
+      "value_used": 0.0014615384615384616,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.001,
+      "value_in_features": 0.0014615384615384616,
       "importance_peak_shaving_benefit": 0.002164,
       "importance_energy_procurement_optimization": 0.001549,
       "importance_trading_revenue": 0.000828
     },
     {
       "name": "battery_usable_per_sum_consumption",
-      "value_used": 0.00028161092726297697,
+      "value_used": 0.00046264378528754587,
       "source": "from_features",
       "was_empty": false,
-      "value_in_features": 0.00028161092726297697,
+      "value_in_features": 0.00046264378528754587,
       "importance_peak_shaving_benefit": 0.004203,
       "importance_energy_procurement_optimization": 0.007723,
       "importance_trading_revenue": 0.005359
@@ -590,91 +590,91 @@
         "rank": 1,
         "name": "ts__consumption_load_kwh_std",
         "importance": 0.264292,
-        "value_used": 25.285236741190765,
+        "value_used": 20.440535843400845,
         "source": "from_features"
       },
       {
         "rank": 2,
         "name": "ts__consumption_load_kwh_iqr",
         "importance": 0.229766,
-        "value_used": 40.81110489241776,
+        "value_used": 36.27389684977815,
         "source": "from_features"
       },
       {
         "rank": 3,
         "name": "ts__consumption_load_kwh_excess_above_p95",
         "importance": 0.225205,
-        "value_used": 33.059777758473615,
+        "value_used": 31.956142741508344,
         "source": "from_features"
       },
       {
         "rank": 4,
         "name": "ts__consumption_load_kwh_max",
         "importance": 0.03179,
-        "value_used": 108.02990942542236,
+        "value_used": 89.69030350561322,
         "source": "from_features"
       },
       {
         "rank": 5,
         "name": "ts__consumption_load_kwh_peak_load_share_p90",
         "importance": 0.030751,
-        "value_used": 0.3020037293776941,
+        "value_used": 0.2840966610434877,
         "source": "from_features"
       },
       {
         "rank": 6,
         "name": "ts__consumption_load_kwh_peak_load_share_p95",
         "importance": 0.027603,
-        "value_used": 0.16561010800129355,
+        "value_used": 0.15787902127030357,
         "source": "from_features"
       },
       {
         "rank": 7,
         "name": "list_battery_usable_max_state",
         "importance": 0.020938,
-        "value_used": 250.0,
+        "value_used": 342.0,
         "source": "from_features"
       },
       {
         "rank": 8,
         "name": "ts__consumption_load_kwh_mean_peak_duration_p95",
         "importance": 0.019715,
-        "value_used": 4.5636363636363635,
+        "value_used": 4.5167095115681235,
         "source": "from_features"
       },
       {
         "rank": 9,
         "name": "ts__consumption_load_kwh_p95",
         "importance": 0.016137,
-        "value_used": 74.97013166694875,
+        "value_used": 57.73416076410487,
         "source": "from_features"
       },
       {
         "rank": 10,
         "name": "ts__consumption_load_kwh_sum",
         "importance": 0.01549,
-        "value_used": 887749.6424936036,
+        "value_used": 739229.6424936035,
         "source": "from_features"
       },
       {
         "rank": 11,
         "name": "ts__consumption_load_kwh_skewness",
         "importance": 0.013607,
-        "value_used": 0.8099500796109286,
+        "value_used": 0.690238237096151,
         "source": "from_features"
       },
       {
         "rank": 12,
         "name": "ts__consumption_pv_r2",
         "importance": 0.011232,
-        "value_used": 0.2882687990684399,
+        "value_used": 0.15036091802631796,
         "source": "from_features"
       },
       {
         "rank": 13,
         "name": "ts__consumption_load_kwh_p90",
         "importance": 0.009862,
-        "value_used": 63.38411401062042,
+        "value_used": 49.16368801400962,
         "source": "from_features"
       },
       {
@@ -688,7 +688,7 @@
         "rank": 15,
         "name": "ts__consumption_load_kwh_peak_to_mean",
         "importance": 0.008652,
-        "value_used": 4.275686202373198,
+        "value_used": 4.263030488527107,
         "source": "from_features"
       }
     ],
@@ -697,14 +697,14 @@
         "rank": 1,
         "name": "list_battery_usable_max_state",
         "importance": 0.708179,
-        "value_used": 250.0,
+        "value_used": 342.0,
         "source": "from_features"
       },
       {
         "rank": 2,
         "name": "ts__consumption_load_kwh_max",
         "importance": 0.042356,
-        "value_used": 108.02990942542236,
+        "value_used": 89.69030350561322,
         "source": "from_features"
       },
       {
@@ -718,14 +718,14 @@
         "rank": 4,
         "name": "ts__consumption_load_kwh_p95",
         "importance": 0.030118,
-        "value_used": 74.97013166694875,
+        "value_used": 57.73416076410487,
         "source": "from_features"
       },
       {
         "rank": 5,
         "name": "ts__consumption_load_kwh_mean",
         "importance": 0.024769,
-        "value_used": 25.26609865931249,
+        "value_used": 21.039095016325238,
         "source": "from_features"
       },
       {
@@ -739,63 +739,63 @@
         "rank": 7,
         "name": "ts__consumption_load_kwh_sum",
         "importance": 0.022148,
-        "value_used": 887749.6424936036,
+        "value_used": 739229.6424936035,
         "source": "from_features"
       },
       {
         "rank": 8,
         "name": "ts__consumption_load_kwh_std",
         "importance": 0.018375,
-        "value_used": 25.285236741190765,
+        "value_used": 20.440535843400845,
         "source": "from_features"
       },
       {
         "rank": 9,
         "name": "ts__consumption_load_kwh_p90",
         "importance": 0.014734,
-        "value_used": 63.38411401062042,
+        "value_used": 49.16368801400962,
         "source": "from_features"
       },
       {
         "rank": 10,
         "name": "ts__consumption_load_kwh_excess_above_p95_norm",
         "importance": 0.008723,
-        "value_used": 1.308463890854339,
+        "value_used": 1.5188934085193326,
         "source": "from_features"
       },
       {
         "rank": 11,
         "name": "battery_usable_per_sum_consumption",
         "importance": 0.007723,
-        "value_used": 0.00028161092726297697,
+        "value_used": 0.00046264378528754587,
         "source": "from_features"
       },
       {
         "rank": 12,
         "name": "ts__consumption_load_kwh_peak_to_mean",
         "importance": 0.007589,
-        "value_used": 4.275686202373198,
+        "value_used": 4.263030488527107,
         "source": "from_features"
       },
       {
         "rank": 13,
         "name": "ts__consumption_load_kwh_skewness",
         "importance": 0.00623,
-        "value_used": 0.8099500796109286,
+        "value_used": 0.690238237096151,
         "source": "from_features"
       },
       {
         "rank": 14,
         "name": "ts__consumption_load_kwh_p25",
         "importance": 0.00529,
-        "value_used": 2.62,
+        "value_used": 2.276103150221853,
         "source": "from_features"
       },
       {
         "rank": 15,
         "name": "ts__pv_load_kwh_std",
         "importance": 0.004875,
-        "value_used": 9.514924005574862,
+        "value_used": 8.905968869218071,
         "source": "from_features"
       }
     ],
@@ -804,56 +804,56 @@
         "rank": 1,
         "name": "list_battery_usable_max_state",
         "importance": 0.942104,
-        "value_used": 250.0,
+        "value_used": 342.0,
         "source": "from_features"
       },
       {
         "rank": 2,
         "name": "battery_usable_per_sum_consumption",
         "importance": 0.005359,
-        "value_used": 0.00028161092726297697,
+        "value_used": 0.00046264378528754587,
         "source": "from_features"
       },
       {
         "rank": 3,
         "name": "ts__consumption_load_kwh_p10",
         "importance": 0.004778,
-        "value_used": 1.34,
+        "value_used": 1.3,
         "source": "from_features"
       },
       {
         "rank": 4,
         "name": "ts__consumption_load_kwh_p50",
         "importance": 0.004471,
-        "value_used": 11.998717405839795,
+        "value_used": 11.59,
         "source": "from_features"
       },
       {
         "rank": 5,
         "name": "ts__consumption_load_kwh_std",
         "importance": 0.004267,
-        "value_used": 25.285236741190765,
+        "value_used": 20.440535843400845,
         "source": "from_features"
       },
       {
         "rank": 6,
         "name": "ts__consumption_load_kwh_excess_above_p95",
         "importance": 0.004243,
-        "value_used": 33.059777758473615,
+        "value_used": 31.956142741508344,
         "source": "from_features"
       },
       {
         "rank": 7,
         "name": "ts__consumption_load_kwh_max",
         "importance": 0.003901,
-        "value_used": 108.02990942542236,
+        "value_used": 89.69030350561322,
         "source": "from_features"
       },
       {
         "rank": 8,
         "name": "ts__consumption_load_kwh_p90",
         "importance": 0.003635,
-        "value_used": 63.38411401062042,
+        "value_used": 49.16368801400962,
         "source": "from_features"
       },
       {
@@ -867,7 +867,7 @@
         "rank": 10,
         "name": "ts__consumption_load_kwh_p95",
         "importance": 0.002627,
-        "value_used": 74.97013166694875,
+        "value_used": 57.73416076410487,
         "source": "from_features"
       },
       {
@@ -881,7 +881,7 @@
         "rank": 12,
         "name": "ts__consumption_load_kwh_mean",
         "importance": 0.001607,
-        "value_used": 25.26609865931249,
+        "value_used": 21.039095016325238,
         "source": "from_features"
       },
       {
@@ -895,14 +895,14 @@
         "rank": 14,
         "name": "ts__consumption_load_kwh_cv",
         "importance": 0.00128,
-        "value_used": 1.0007574609019119,
+        "value_used": 0.9715501464079161,
         "source": "from_features"
       },
       {
         "rank": 15,
         "name": "pv_consumed_percentage",
         "importance": 0.001079,
-        "value_used": 0.8,
+        "value_used": 0.22,
         "source": "from_features"
       }
     ]

@@ -1,6 +1,6 @@
 import { ChartDataPoint, BackendTimeSeriesRow } from '../types';
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 // --- Internal Helper: Bucket Definition ---
 interface Bucket {

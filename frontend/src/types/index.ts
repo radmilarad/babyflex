@@ -16,4 +16,5 @@ export interface SimulationWaterfallResults {
     peak: number;
     procurement: number;
     trading: number;
+    warning?: string;
 }

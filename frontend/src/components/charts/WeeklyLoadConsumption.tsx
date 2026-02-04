@@ -7,7 +7,7 @@ export const WeeklyHighResChart = ({ data }: { data: ChartDataPoint[] | null }) 
 
     // Visualization Config
     const dayTicks = [48, 144, 240, 336, 432, 528, 624]; // Center of each day (0-96)
-    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
     const boundaries = [0, 96, 192, 288, 384, 480, 576, 672]; // Vertical grid lines
 
     const formatXAxis = (tickItem: number) => {

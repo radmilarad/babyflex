@@ -1,5 +1,11 @@
 {
-  "peak_shaving_benefit": 6783.9162103393455,
-  "energy_procurement_optimization": -3429.4567434287374,
-  "trading_revenue": 25460.987096559744
+  "peak_shaving_benefit": -26256.12244506761,
+  "energy_procurement_optimization": 16940.17973584905,
+  "trading_revenue": 32367.905320207687,
+  "total_grid_load_kwh": 687749.64,
+  "pv_generation_kwh": 250000.0,
+  "peak_grid_load_kwh": 84.24,
+  "usage_hours_h": 8164.17,
+  "estimated_consumption_kwh": 887749.64,
+  "warning_message": ""
 }

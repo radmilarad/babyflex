@@ -22,44 +22,48 @@ from dateutil.relativedelta import relativedelta
 # -------------------------------------------------------------------
 # 🛠️ Paths
 # -------------------------------------------------------------------
+# This file is in: backend/app/main.py
+# Backend root: backend/
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
 PREDICTION_DIR = BACKEND_ROOT / "scripts" / "3_prediction"
 FRONTEND_DATA_DIR = PREDICTION_DIR / "frontend_data"
 WORKING_DATA_DIR = PREDICTION_DIR / "working_data"
 
+# Pipeline IO
 INPUT_JSON_PATH = FRONTEND_DATA_DIR / "frontend_data.json"
 INPUT_CSV_PATH = FRONTEND_DATA_DIR / "input_load.csv"
 PREPROCESSED_CSV_PATH = FRONTEND_DATA_DIR / "input_load_preprocessed.csv"
+
 WORKING_FEATURES_PATH = WORKING_DATA_DIR / "features.json"
 OUTPUT_JSON_PATH = FRONTEND_DATA_DIR / "outputs_for_frontend.json"
 PREDICTION_DEBUG_PATH = FRONTEND_DATA_DIR / "prediction_debug.json"
 
+# Optional DB
 DB_FILE_PATH = BACKEND_ROOT / "scripts" / "database" / "battery_simulations.duckdb"
 
+# Ensure dirs exist
 FRONTEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
 WORKING_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Add backend root so "scripts.*" imports work
+# Add backend root so we can import scripts/*
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.append(str(BACKEND_ROOT))
 
 # -------------------------------------------------------------------
-# 🗃️ Optional DB (not required for prediction)
+# 🗃️ Optional DB (NOT required for models)
 # -------------------------------------------------------------------
-BatteryDatabase = None
 db = None
 try:
-    from scripts.battery_db import BatteryDatabase as _BatteryDatabase  # type: ignore
+    from scripts.battery_db import BatteryDatabase  # type: ignore
 
-    BatteryDatabase = _BatteryDatabase
     DB_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
     db = BatteryDatabase(str(DB_FILE_PATH))
 except Exception as e:
     print(f"⚠️ DB disabled (BatteryDatabase import/init failed): {e}")
 
 # -------------------------------------------------------------------
-# 🔐 Load environment variables
+# 🔐 Env
 # -------------------------------------------------------------------
 env_path = BACKEND_ROOT / ".env"
 load_dotenv(env_path)
@@ -105,7 +109,7 @@ def build_enet_rlm_url(
 
 
 # -------------------------------------------------------------------
-# 🚀 App Setup
+# 🚀 App
 # -------------------------------------------------------------------
 app = FastAPI(title="Trawa Flex API", version="1.4")
 app.add_middleware(
@@ -116,6 +120,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Prevent concurrent pipeline runs (scripts write shared filenames)
 PIPELINE_LOCK = asyncio.Lock()
 
 # -------------------------------------------------------------------
@@ -129,7 +134,8 @@ def _file_debug(p: Path) -> str:
 
 
 def _run_step(name: str, cmd: list[str]) -> subprocess.CompletedProcess:
-    print(f"\n🧩 STEP: {name}")
+    print("\n" + "=" * 80)
+    print(f"🧩 STEP: {name}")
     print("CWD:", str(BACKEND_ROOT))
     print("CMD:", " ".join(cmd))
     res = subprocess.run(
@@ -148,10 +154,11 @@ def _run_step(name: str, cmd: list[str]) -> subprocess.CompletedProcess:
 
 
 def _raise_failed(step: str, res: subprocess.CompletedProcess) -> None:
+    # Many scripts print errors to stdout; include stderr OR stdout
     msg = (res.stderr or res.stdout or "").strip()
     if not msg:
         msg = "No stdout/stderr captured."
-    raise HTTPException(status_code=500, detail=f"{step} failed (rc={res.returncode}): {msg[:2000]}")
+    raise HTTPException(status_code=500, detail=f"{step} failed (rc={res.returncode}): {msg[:4000]}")
 
 
 # -------------------------------------------------------------------
@@ -211,7 +218,7 @@ def get_simulation_timeseries():
     if not FRONTEND_DATA_DIR.exists():
         raise HTTPException(status_code=404, detail="Data directory not found")
 
-    # Prefer the fixed filename we produce, else fall back to newest *_preprocessed.csv
+    # Prefer the fixed file our pipeline writes
     target_file = PREPROCESSED_CSV_PATH
     if not target_file.exists():
         files = list(FRONTEND_DATA_DIR.glob("*_preprocessed.csv"))
@@ -244,14 +251,14 @@ async def submit_simulation(
     client_name, run_name = "Web_Submission", f"Run_{uuid.uuid4().hex[:8]}"
     python_exec = sys.executable
 
-    # 1) Save upload
+    # 1) Save uploaded CSV (path scripts expect)
     try:
         with open(INPUT_CSV_PATH, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         return JSONResponse(status_code=500, content={"detail": f"Failed to save file: {str(e)}"})
 
-    # 2) Write inputs json
+    # 2) Save parameters JSON (path scripts expect)
     params = {
         "list_battery_usable_max_state": float(list_battery_usable_max_state),
         "list_battery_num_annual_cycles": float(list_battery_num_annual_cycles),
@@ -260,7 +267,7 @@ async def submit_simulation(
         "pv_consumed_percentage": float(pv_consumed_percentage),
         "static_grid_fees": float(static_grid_fees),
         "grid_fee_max_load_peak": float(grid_fee_max_load_peak),
-        # convenience (your other scripts use these)
+        # convenience / legacy keys used downstream
         "pv_annual_total": float(pv_peak_power) * 1000.0,
         "working_price_eur_per_kwh": float(static_grid_fees),
         "power_price_eur_per_kw": float(grid_fee_max_load_peak),
@@ -268,23 +275,29 @@ async def submit_simulation(
         "list_battery_efficiency": 0.92,
         "list_battery_usability": 0.92,
     }
+
     with open(INPUT_JSON_PATH, "w") as f:
         json.dump(params, f, indent=2)
 
-    # 3) Run pipeline in order (preprocess -> features -> predict)
+    # 3) Run pipeline scripts IN ORDER (locked)
     async with PIPELINE_LOCK:
-        print("\n" + "=" * 80)
-        print(f"🚀 Starting Prediction Pipeline for {run_name} @ {datetime.now().isoformat()}")
+        print("\n" + "#" * 80)
+        print(f"🚀 Pipeline start for {run_name} @ {datetime.now().isoformat()}")
         print("INPUT CSV:", _file_debug(INPUT_CSV_PATH))
         print("INPUT JSON:", _file_debug(INPUT_JSON_PATH))
 
-        # delete stale outputs
-        for p in [OUTPUT_JSON_PATH, PREDICTION_DEBUG_PATH, WORKING_FEATURES_PATH, PREPROCESSED_CSV_PATH]:
+        # Delete stale artifacts so you never return old numbers
+        for p in [
+            OUTPUT_JSON_PATH,
+            PREDICTION_DEBUG_PATH,
+            WORKING_FEATURES_PATH,
+            PREPROCESSED_CSV_PATH,
+        ]:
             if p.exists():
                 p.unlink()
                 print(f"🧹 Deleted stale: {p}")
 
-        # Step 1: Preprocess (FORCE output filename so backend knows where it is)
+        # Step 1: preprocess_load_and_pv.py -> PREPROCESSED_CSV_PATH
         proc_res = _run_step(
             "preprocess_load_and_pv",
             [
@@ -305,7 +318,7 @@ async def submit_simulation(
         if not PREPROCESSED_CSV_PATH.exists():
             raise HTTPException(status_code=500, detail="Preprocess did not create input_load_preprocessed.csv")
 
-        # Step 2: Features (FORCE output path)
+        # Step 2: calculate_features.py -> WORKING_FEATURES_PATH
         feat_res = _run_step(
             "calculate_features",
             [
@@ -326,7 +339,7 @@ async def submit_simulation(
         if not WORKING_FEATURES_PATH.exists():
             raise HTTPException(status_code=500, detail="calculate_features did not create working_data/features.json")
 
-        # Step 3: Predict (write outputs + debug)
+        # Step 3: predict_buckets.py -> OUTPUT_JSON_PATH (+ debug json)
         pred_res = _run_step(
             "predict_buckets",
             [
@@ -345,19 +358,37 @@ async def submit_simulation(
             _raise_failed("Prediction", pred_res)
 
         print("OUTPUT JSON:", _file_debug(OUTPUT_JSON_PATH))
-        print("DEBUG JSON:", _file_debug(PREDICTION_DEBUG_PATH))
+        print("PRED DEBUG JSON:", _file_debug(PREDICTION_DEBUG_PATH))
         if not OUTPUT_JSON_PATH.exists():
             raise HTTPException(status_code=500, detail="Predict did not create outputs_for_frontend.json")
 
-    # 4) Read results
+        # Step 4: write_other_outputs.py -> merges extra summary keys into OUTPUT_JSON_PATH
+        other_res = _run_step(
+            "write_other_outputs",
+            [
+                python_exec,
+                str(PREDICTION_DIR / "write_other_outputs.py"),
+                "--input",
+                str(PREPROCESSED_CSV_PATH),
+                "--output",
+                str(OUTPUT_JSON_PATH),
+            ],
+        )
+        if other_res.returncode != 0:
+            _raise_failed("write_other_outputs", other_res)
+
+        print("OUTPUT JSON (after summaries):", _file_debug(OUTPUT_JSON_PATH))
+
+    # 4) Read Results
     try:
+        print(f"📖 Reading results from: {OUTPUT_JSON_PATH}")
         with open(OUTPUT_JSON_PATH, "r") as f:
             data = json.load(f)
         results = {k: (v if v is not None else 0) for k, v in data.items()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading prediction results: {str(e)}")
 
-    # 5) Optional DB logging (won't break API)
+    # 5) Optional DB Logging (won’t break the API)
     if db is not None:
         try:
             db.add_run(client_name, run_name, "Web Submission", params, datetime.now())
@@ -376,8 +407,8 @@ async def submit_simulation(
         "message": "Success",
         "run_id": run_name,
         "results": results,
-        # helpful during debugging; remove later if you want
-        "debug": {
+        # Keep this during debugging; remove later if you want
+        "debug_paths": {
             "preprocessed_csv": str(PREPROCESSED_CSV_PATH.resolve()),
             "features_json": str(WORKING_FEATURES_PATH.resolve()),
             "outputs_json": str(OUTPUT_JSON_PATH.resolve()),

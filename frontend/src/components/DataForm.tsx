@@ -113,7 +113,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
                     </h3>
                     <div>
                         <label className={labelStyle}>Adresse</label>
-                        <AddressInput onGridFeeFetched={handleGridFee} />
+                        <AddressInput onGridFeeFetched={handleGridFee}  />
                         {/* Hidden validation hack to ensure grid data is present if needed */}
                         <input
                             type="hidden"

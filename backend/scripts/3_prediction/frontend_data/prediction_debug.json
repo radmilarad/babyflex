@@ -10,9 +10,9 @@
     "models_dir": "/Users/radmilaradivojevic/Documents/hackathon/energy_dashboard_local/backend/scripts/3_prediction/models"
   },
   "predictions": {
-    "trading_revenue": 985.5183748654965,
-    "energy_procurement_optimization": 14081.291375191297,
-    "peak_shaving_benefit": 17619.595369179453
+    "trading_revenue": -10155.944231968528,
+    "energy_procurement_optimization": 12786.716556068399,
+    "peak_shaving_benefit": 4013.5148383001588
   },
   "model_performance": {
     "trading_revenue": {
@@ -33,7 +33,7 @@
   },
   "targets_detail": {
     "trading_revenue": {
-      "prediction": 985.5183748654965,
+      "prediction": -10155.944231968528,
       "n_features": 20,
       "n_from_features_json": 20,
       "n_from_predictions": 0,
@@ -41,21 +41,21 @@
       "features_used": [
         {
           "name": "list_battery_usable_max_state",
-          "value": 233.0,
+          "value": 234.0,
           "source": "from_features",
-          "value_in_features": 233.0
+          "value_in_features": 234.0
         },
         {
           "name": "list_battery_num_annual_cycles",
-          "value": 333.0,
+          "value": 234.0,
           "source": "from_features",
-          "value_in_features": 333.0
+          "value_in_features": 234.0
         },
         {
           "name": "list_battery_proportion_hourly_max_load",
-          "value": 1.386,
+          "value": 1.0,
           "source": "from_features",
-          "value_in_features": 1.386
+          "value_in_features": 1.0
         },
         {
           "name": "grid_fee_max_load_peak",
@@ -71,87 +71,87 @@
         },
         {
           "name": "pv_annual_total",
-          "value": 345000.0,
+          "value": 234000.0,
           "source": "from_features",
-          "value_in_features": 345000.0
+          "value_in_features": 234000.0
         },
         {
           "name": "pv_consumed_percentage",
-          "value": 0.34,
+          "value": 0.23,
           "source": "from_features",
-          "value_in_features": 0.34
+          "value_in_features": 0.23
         },
         {
           "name": "ts__consumption_load_kwh_max",
-          "value": 251.8110304958397,
+          "value": 89.93804457405018,
           "source": "from_features",
-          "value_in_features": 251.8110304958397
+          "value_in_features": 89.93804457405018
         },
         {
           "name": "ts__consumption_load_kwh_mean",
-          "value": 48.631262828112625,
+          "value": 21.10569337698098,
           "source": "from_features",
-          "value_in_features": 48.631262828112625
+          "value_in_features": 21.10569337698098
         },
         {
           "name": "ts__consumption_load_kwh_sum",
-          "value": 1708708.050728565,
+          "value": 741569.6424936038,
           "source": "from_features",
-          "value_in_features": 1708708.050728565
+          "value_in_features": 741569.6424936038
         },
         {
           "name": "ts__consumption_load_kwh_std",
-          "value": 50.18460899125515,
+          "value": 20.507817372980302,
           "source": "from_features",
-          "value_in_features": 50.18460899125515
+          "value_in_features": 20.507817372980302
         },
         {
           "name": "ts__consumption_load_kwh_cv",
-          "value": 1.0319413083849547,
+          "value": 0.971672287978335,
           "source": "from_features",
-          "value_in_features": 1.0319413083849547
+          "value_in_features": 0.971672287978335
         },
         {
           "name": "ts__consumption_load_kwh_p95",
-          "value": 162.85480380689853,
+          "value": 57.98778170397711,
           "source": "from_features",
-          "value_in_features": 162.85480380689853
+          "value_in_features": 57.98778170397711
         },
         {
           "name": "ts__consumption_load_kwh_excess_above_p95",
-          "value": 88.95622668894117,
+          "value": 31.950262870073068,
           "source": "from_features",
-          "value_in_features": 88.95622668894117
+          "value_in_features": 31.950262870073068
         },
         {
           "name": "ts__consumption_load_kwh_peak_to_mean",
-          "value": 5.177966103530289,
+          "value": 4.26131674366792,
           "source": "from_features",
-          "value_in_features": 5.177966103530289
+          "value_in_features": 4.26131674366792
         },
         {
           "name": "ts__usage_hours",
-          "value": 6408.130927223606,
+          "value": 8164.169545270697,
           "source": "from_features",
-          "value_in_features": 6408.130927223606
+          "value_in_features": 8164.169545270697
         },
         {
           "name": "ts__pv_load_kwh_sum",
-          "value": 345000.0,
+          "value": 234000.0,
           "source": "from_features",
-          "value_in_features": 345000.0
+          "value_in_features": 234000.0
         },
         {
           "name": "ts__pv_load_kwh_max",
-          "value": 34.59450580237094,
+          "value": 23.46409958769507,
           "source": "from_features",
-          "value_in_features": 34.59450580237094
+          "value_in_features": 23.46409958769507
         },
         {
           "name": "battery_usable_per_sum_consumption",
-          "value": 0.00013636033370396578,
+          "value": 0.00031554689754174816,
           "source": "from_features",
-          "value_in_features": 0.00013636033370396578
+          "value_in_features": 0.00031554689754174816
         },
         {
           "name": "fee_x_excess",
@@ -162,7 +162,7 @@
       ]
     },
     "energy_procurement_optimization": {
-      "prediction": 14081.291375191297,
+      "prediction": 12786.716556068399,
       "n_features": 21,
       "n_from_features_json": 20,
       "n_from_predictions": 1,
@@ -170,21 +170,21 @@
       "features_used": [
         {
           "name": "list_battery_usable_max_state",
-          "value": 233.0,
+          "value": 234.0,
           "source": "from_features",
-          "value_in_features": 233.0
+          "value_in_features": 234.0
         },
         {
           "name": "list_battery_num_annual_cycles",
-          "value": 333.0,
+          "value": 234.0,
           "source": "from_features",
-          "value_in_features": 333.0
+          "value_in_features": 234.0
         },
         {
           "name": "list_battery_proportion_hourly_max_load",
-          "value": 1.386,
+          "value": 1.0,
           "source": "from_features",
-          "value_in_features": 1.386
+          "value_in_features": 1.0
         },
         {
           "name": "grid_fee_max_load_peak",
@@ -200,87 +200,87 @@
         },
         {
           "name": "pv_annual_total",
-          "value": 345000.0,
+          "value": 234000.0,
           "source": "from_features",
-          "value_in_features": 345000.0
+          "value_in_features": 234000.0
         },
         {
           "name": "pv_consumed_percentage",
-          "value": 0.34,
+          "value": 0.23,
           "source": "from_features",
-          "value_in_features": 0.34
+          "value_in_features": 0.23
         },
         {
           "name": "ts__consumption_load_kwh_max",
-          "value": 251.8110304958397,
+          "value": 89.93804457405018,
           "source": "from_features",
-          "value_in_features": 251.8110304958397
+          "value_in_features": 89.93804457405018
         },
         {
           "name": "ts__consumption_load_kwh_mean",
-          "value": 48.631262828112625,
+          "value": 21.10569337698098,
           "source": "from_features",
-          "value_in_features": 48.631262828112625
+          "value_in_features": 21.10569337698098
         },
         {
           "name": "ts__consumption_load_kwh_sum",
-          "value": 1708708.050728565,
+          "value": 741569.6424936038,
           "source": "from_features",
-          "value_in_features": 1708708.050728565
+          "value_in_features": 741569.6424936038
         },
         {
           "name": "ts__consumption_load_kwh_std",
-          "value": 50.18460899125515,
+          "value": 20.507817372980302,
           "source": "from_features",
-          "value_in_features": 50.18460899125515
+          "value_in_features": 20.507817372980302
         },
         {
           "name": "ts__consumption_load_kwh_cv",
-          "value": 1.0319413083849547,
+          "value": 0.971672287978335,
           "source": "from_features",
-          "value_in_features": 1.0319413083849547
+          "value_in_features": 0.971672287978335
         },
         {
           "name": "ts__consumption_load_kwh_p95",
-          "value": 162.85480380689853,
+          "value": 57.98778170397711,
           "source": "from_features",
-          "value_in_features": 162.85480380689853
+          "value_in_features": 57.98778170397711
         },
         {
           "name": "ts__consumption_load_kwh_excess_above_p95",
-          "value": 88.95622668894117,
+          "value": 31.950262870073068,
           "source": "from_features",
-          "value_in_features": 88.95622668894117
+          "value_in_features": 31.950262870073068
         },
         {
           "name": "ts__consumption_load_kwh_peak_to_mean",
-          "value": 5.177966103530289,
+          "value": 4.26131674366792,
           "source": "from_features",
-          "value_in_features": 5.177966103530289
+          "value_in_features": 4.26131674366792
         },
         {
           "name": "ts__usage_hours",
-          "value": 6408.130927223606,
+          "value": 8164.169545270697,
           "source": "from_features",
-          "value_in_features": 6408.130927223606
+          "value_in_features": 8164.169545270697
         },
         {
           "name": "ts__pv_load_kwh_sum",
-          "value": 345000.0,
+          "value": 234000.0,
           "source": "from_features",
-          "value_in_features": 345000.0
+          "value_in_features": 234000.0
         },
         {
           "name": "ts__pv_load_kwh_max",
-          "value": 34.59450580237094,
+          "value": 23.46409958769507,
           "source": "from_features",
-          "value_in_features": 34.59450580237094
+          "value_in_features": 23.46409958769507
         },
         {
           "name": "battery_usable_per_sum_consumption",
-          "value": 0.00013636033370396578,
+          "value": 0.00031554689754174816,
           "source": "from_features",
-          "value_in_features": 0.00013636033370396578
+          "value_in_features": 0.00031554689754174816
         },
         {
           "name": "fee_x_excess",
@@ -290,14 +290,14 @@
         },
         {
           "name": "pred_trading_revenue",
-          "value": 985.5183748654965,
+          "value": -10155.944231968528,
           "source": "predicted",
-          "value_in_features": 985.5183748654965
+          "value_in_features": -10155.944231968528
         }
       ]
     },
     "peak_shaving_benefit": {
-      "prediction": 17619.595369179453,
+      "prediction": 4013.5148383001588,
       "n_features": 22,
       "n_from_features_json": 20,
       "n_from_predictions": 2,
@@ -305,21 +305,21 @@
       "features_used": [
         {
           "name": "list_battery_usable_max_state",
-          "value": 233.0,
+          "value": 234.0,
           "source": "from_features",
-          "value_in_features": 233.0
+          "value_in_features": 234.0
         },
         {
           "name": "list_battery_num_annual_cycles",
-          "value": 333.0,
+          "value": 234.0,
           "source": "from_features",
-          "value_in_features": 333.0
+          "value_in_features": 234.0
         },
         {
           "name": "list_battery_proportion_hourly_max_load",
-          "value": 1.386,
+          "value": 1.0,
           "source": "from_features",
-          "value_in_features": 1.386
+          "value_in_features": 1.0
         },
         {
           "name": "grid_fee_max_load_peak",
@@ -335,87 +335,87 @@
         },
         {
           "name": "pv_annual_total",
-          "value": 345000.0,
+          "value": 234000.0,
           "source": "from_features",
-          "value_in_features": 345000.0
+          "value_in_features": 234000.0
         },
         {
           "name": "pv_consumed_percentage",
-          "value": 0.34,
+          "value": 0.23,
           "source": "from_features",
-          "value_in_features": 0.34
+          "value_in_features": 0.23
         },
         {
           "name": "ts__consumption_load_kwh_max",
-          "value": 251.8110304958397,
+          "value": 89.93804457405018,
           "source": "from_features",
-          "value_in_features": 251.8110304958397
+          "value_in_features": 89.93804457405018
         },
         {
           "name": "ts__consumption_load_kwh_mean",
-          "value": 48.631262828112625,
+          "value": 21.10569337698098,
           "source": "from_features",
-          "value_in_features": 48.631262828112625
+          "value_in_features": 21.10569337698098
         },
         {
           "name": "ts__consumption_load_kwh_sum",
-          "value": 1708708.050728565,
+          "value": 741569.6424936038,
           "source": "from_features",
-          "value_in_features": 1708708.050728565
+          "value_in_features": 741569.6424936038
         },
         {
           "name": "ts__consumption_load_kwh_std",
-          "value": 50.18460899125515,
+          "value": 20.507817372980302,
           "source": "from_features",
-          "value_in_features": 50.18460899125515
+          "value_in_features": 20.507817372980302
         },
         {
           "name": "ts__consumption_load_kwh_cv",
-          "value": 1.0319413083849547,
+          "value": 0.971672287978335,
           "source": "from_features",
-          "value_in_features": 1.0319413083849547
+          "value_in_features": 0.971672287978335
         },
         {
           "name": "ts__consumption_load_kwh_p95",
-          "value": 162.85480380689853,
+          "value": 57.98778170397711,
           "source": "from_features",
-          "value_in_features": 162.85480380689853
+          "value_in_features": 57.98778170397711
         },
         {
           "name": "ts__consumption_load_kwh_excess_above_p95",
-          "value": 88.95622668894117,
+          "value": 31.950262870073068,
           "source": "from_features",
-          "value_in_features": 88.95622668894117
+          "value_in_features": 31.950262870073068
         },
         {
           "name": "ts__consumption_load_kwh_peak_to_mean",
-          "value": 5.177966103530289,
+          "value": 4.26131674366792,
           "source": "from_features",
-          "value_in_features": 5.177966103530289
+          "value_in_features": 4.26131674366792
         },
         {
           "name": "ts__usage_hours",
-          "value": 6408.130927223606,
+          "value": 8164.169545270697,
           "source": "from_features",
-          "value_in_features": 6408.130927223606
+          "value_in_features": 8164.169545270697
         },
         {
           "name": "ts__pv_load_kwh_sum",
-          "value": 345000.0,
+          "value": 234000.0,
           "source": "from_features",
-          "value_in_features": 345000.0
+          "value_in_features": 234000.0
         },
         {
           "name": "ts__pv_load_kwh_max",
-          "value": 34.59450580237094,
+          "value": 23.46409958769507,
           "source": "from_features",
-          "value_in_features": 34.59450580237094
+          "value_in_features": 23.46409958769507
         },
         {
           "name": "battery_usable_per_sum_consumption",
-          "value": 0.00013636033370396578,
+          "value": 0.00031554689754174816,
           "source": "from_features",
-          "value_in_features": 0.00013636033370396578
+          "value_in_features": 0.00031554689754174816
         },
         {
           "name": "fee_x_excess",
@@ -425,15 +425,15 @@
         },
         {
           "name": "pred_trading_revenue",
-          "value": 985.5183748654965,
+          "value": -10155.944231968528,
           "source": "predicted",
-          "value_in_features": 985.5183748654965
+          "value_in_features": -10155.944231968528
         },
         {
           "name": "pred_energy_procurement_optimization",
-          "value": 14081.291375191297,
+          "value": 12786.716556068399,
           "source": "predicted",
-          "value_in_features": 14081.291375191297
+          "value_in_features": 12786.716556068399
         }
       ]
     }

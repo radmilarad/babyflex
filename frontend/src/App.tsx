@@ -47,7 +47,7 @@ const App = () => {
                 });
                 setHeaderChartData({
                     total_grid_load_kwh: result.results.total_grid_load_kwh,
-                    peak_grid_load_kwh: result.results.peak_grid_load_kwh,
+                    peak_grid_load_kw: result.results.peak_grid_load_kw,
                     usage_hours_h: result.results.usage_hours_h,
                     pv_generation_kwh: result.results.pv_generation_kwh,
                     estimated_consumption_kwh: result.results.estimated_consumption_kwh,

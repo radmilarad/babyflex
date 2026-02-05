@@ -36,17 +36,25 @@ import numpy as np
 # (1) Load consumption data (Excel or CSV)
 # -----------------------------------------------------------------------------
 
-# Accepted formats: ("timestamp", "value kwh") or ("timestamp_utc", "value")
-LOAD_COLUMN_VARIANTS = [
-    ("timestamp", "value kwh"),
-    ("timestamp_utc", "value"),
-]
+# Flexible column detection - case-insensitive matching
+TIMESTAMP_VARIANTS = ["timestamp_utc", "timestamp", "time", "datetime", "date", "zeit", "datum"]
+VALUE_VARIANTS = ["value", "value kwh", "value_kwh", "load", "load_kwh", "consumption", "consumption_kwh", 
+                  "grid_load", "grid_load_kwh", "wert", "verbrauch", "last", "kwh"]
+
+
+def find_column(df_columns: list[str], variants: list[str]) -> str | None:
+    """Find first matching column (case-insensitive)."""
+    df_cols_lower = {c.lower().strip(): c for c in df_columns}
+    for v in variants:
+        if v.lower() in df_cols_lower:
+            return df_cols_lower[v.lower()]
+    return None
 
 
 def load_consumption_data(path: str) -> pd.DataFrame:
     """
     Load load/consumption timeseries from Excel or CSV.
-    Accepts either: "timestamp" + "value kwh", or "timestamp_utc" + "value" (kWh).
+    Flexibly accepts various column names for timestamp and value.
     Returns DataFrame with columns: timestamp_utc, grid_load_kwh.
     """
     path = Path(path)
@@ -58,17 +66,32 @@ def load_consumption_data(path: str) -> pd.DataFrame:
     else:
         df = pd.read_csv(path, parse_dates=False)
 
-    time_col, value_col = None, None
-    for t, v in LOAD_COLUMN_VARIANTS:
-        if t in df.columns and v in df.columns:
-            time_col, value_col = t, v
-            break
+    # Strip whitespace from column names
+    df.columns = [c.strip() for c in df.columns]
+    
+    # Find timestamp column
+    time_col = find_column(df.columns, TIMESTAMP_VARIANTS)
     if time_col is None:
         raise ValueError(
-            f"Load file must have timestamp + value columns. "
-            f"Accepted: {LOAD_COLUMN_VARIANTS}. Found: {list(df.columns)}"
+            f"No timestamp column found. Looking for: {TIMESTAMP_VARIANTS}. "
+            f"Found: {list(df.columns)}"
         )
-
+    
+    # Find value column
+    value_col = find_column(df.columns, VALUE_VARIANTS)
+    if value_col is None:
+        # Try second column if only 2 columns exist
+        if len(df.columns) == 2:
+            value_col = [c for c in df.columns if c != time_col][0]
+            print(f"  Auto-detected value column: '{value_col}'")
+        else:
+            raise ValueError(
+                f"No value column found. Looking for: {VALUE_VARIANTS}. "
+                f"Found: {list(df.columns)}"
+            )
+    
+    print(f"  Using columns: timestamp='{time_col}', value='{value_col}'")
+    
     df = df[[time_col, value_col]].copy()
     df["grid_load_kwh"] = pd.to_numeric(df[value_col], errors="coerce").clip(lower=0)
     df["timestamp_utc"] = pd.to_datetime(df[time_col], utc=True)
@@ -214,13 +237,28 @@ def merge_load_and_pv(
 # Main
 # -----------------------------------------------------------------------------
 
+def find_load_csv(dir_path: Path) -> Path | None:
+    """
+    Find load_consumption_*.csv (but NOT *_preprocessed.csv).
+    Returns most recently modified file if multiple exist.
+    """
+    candidates = []
+    for f in dir_path.glob("load_consumption_*.csv"):
+        if "_preprocessed" not in f.name:
+            candidates.append(f)
+    if not candidates:
+        return None
+    # Return most recently modified
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+
 def main():
     script_dir = Path(__file__).resolve().parent
-    default_load = script_dir / "frontend_data" / "load_consumption_AmazonenWerkeDreyer.csv"
-    default_inputs = script_dir / "frontend_data" / "frontend_data.json"
+    frontend_data = script_dir / "frontend_data"
+    default_inputs = frontend_data / "frontend_data.json"
 
     parser = argparse.ArgumentParser(description="Preprocess load + PV → grid_load_kwh, consumption_kwh")
-    parser.add_argument("--load", default=str(default_load), help=f"Path to load timeseries (default: frontend_data/load_consumption_AmazonenWerkeDreyer.csv)")
+    parser.add_argument("--load", default=None, help="Path to load timeseries (default: auto-detect load_consumption_*.csv)")
     parser.add_argument("--inputs", default=None, help="Path to frontend_data.json (default: frontend_data/frontend_data.json)")
     parser.add_argument("--output", default=None, help="Output CSV path (default: frontend_data/<load_stem>_preprocessed.csv)")
     parser.add_argument("--year", type=int, default=2024, help="Year for PV simulation (default: 2024)")
@@ -249,13 +287,22 @@ def main():
         pv_consumed = pv_consumed / 100.0
     pv_consumed = max(0.0, min(1.0, pv_consumed))
 
-    # (1) Load consumption data
-    load_path = Path(args.load)
-    if not load_path.is_absolute():
-        if (Path.cwd() / load_path).exists():
-            load_path = (Path.cwd() / load_path).resolve()
-        else:
-            load_path = (script_dir / load_path).resolve()
+    # (1) Load consumption data - auto-detect if not specified
+    if args.load is None:
+        load_path = find_load_csv(frontend_data)
+        if load_path is None:
+            raise FileNotFoundError(
+                f"No load_consumption_*.csv found in {frontend_data}. "
+                "Please provide --load argument or add a CSV file."
+            )
+        print(f"Auto-detected: {load_path.name}")
+    else:
+        load_path = Path(args.load)
+        if not load_path.is_absolute():
+            if (Path.cwd() / load_path).exists():
+                load_path = (Path.cwd() / load_path).resolve()
+            else:
+                load_path = (script_dir / load_path).resolve()
     df_load = load_consumption_data(str(load_path))
     print(f"Load data: {len(df_load)} rows, {df_load['grid_load_kwh'].sum():,.2f} kWh total")
     print(f"pv_consumed_percentage: {pv_consumed:.2%}")

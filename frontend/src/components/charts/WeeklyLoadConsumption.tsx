@@ -48,7 +48,7 @@ export const WeeklyHighResChart = ({data, headerChartData}: {
 
                         {/* Peak Grid Load */}
                         <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                            <p className="text-xs font-medium text-gray-500">Spitzenlast Netz</p>
+                            <p className="text-xs font-medium text-gray-500">Spitzenlast</p>
                             <p className="mt-1 text-xl font-bold text-gray-900">
                                 {formatNumber(peak_grid_load_kwh)} <span
                                 className="text-sm font-semibold text-gray-500">kWh</span>

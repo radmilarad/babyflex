@@ -158,8 +158,18 @@ def main() -> None:
     # Model expects load-profile features with prefix "ts__" (same as 2_ml pipeline)
     ts_features = {f"ts__{k}": v for k, v in column_and_df.items()}
     ratio = compute_ratio_features(df, direct)
+    
+    # Engineered features (same as training pipeline)
+    engineered = {}
+    grid_fee = direct.get('grid_fee_max_load_peak')
+    excess = ts_features.get('ts__consumption_load_kwh_excess_above_p95')
+    if grid_fee is not None and excess is not None and not np.isnan(grid_fee) and not np.isnan(excess):
+        engineered['fee_x_excess'] = grid_fee * excess
+    else:
+        engineered['fee_x_excess'] = np.nan
+    
     # Direct inputs are used as-is; all energy values are expected in kWh.
-    all_features = {**direct, **ts_features, **ratio}
+    all_features = {**direct, **ts_features, **ratio, **engineered}
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)

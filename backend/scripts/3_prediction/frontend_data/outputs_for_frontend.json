@@ -1,11 +1,11 @@
 {
-  "peak_shaving_benefit": -24305.77500098535,
-  "energy_procurement_optimization": 25069.797529299783,
-  "trading_revenue": 36068.792661830856,
-  "total_grid_load_kwh": 687749.64,
-  "pv_generation_kwh": 234000.0,
-  "peak_grid_load_kwh": 84.24,
-  "usage_hours_h": 8164.17,
-  "estimated_consumption_kwh": 739229.64,
-  "warning_message": ""
+  "trading_revenue": 985.5183748654965,
+  "energy_procurement_optimization": 14081.291375191297,
+  "peak_shaving_benefit": 17619.595369179453,
+  "total_grid_load_kwh": 1591408.05,
+  "pv_generation_kwh": 345000.0,
+  "peak_grid_load_kw": 993.37,
+  "usage_hours_h": 1602.03,
+  "estimated_consumption_kwh": 1708708.05,
+  "warning_message": "Spitzenlastprofil (1602 h): Peak-Shaving-Potenzial k\u00f6nnte h\u00f6her sein."
 }

@@ -225,7 +225,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
                             <div>
                                 <label htmlFor="batteryCycles" className={labelStyle}>Max. jährliche Zyklen</label>
                                 <div className="relative">
-                                    <span className={unitStyle}>Cycles</span>
+                                    <span className={unitStyle}>Zyklen</span>
                                     <input
                                         type="number"
                                         name="batteryCycles"
@@ -234,7 +234,7 @@ export const DataForm: React.FC<DataFormProps> = ({ onSubmit, onFileSelect, isLo
                                         onChange={handleChange}
                                         className={`${inputStyle} border-emerald-100 focus:border-emerald-500`}
                                         style={{ paddingLeft: '4.5rem' }}
-                                        placeholder="250"
+                                        placeholder="800"
                                         min="0"
                                         required
                                     />

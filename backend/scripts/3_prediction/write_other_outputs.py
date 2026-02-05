@@ -6,8 +6,8 @@ Weitere Ausgaben fürs Frontend in outputs_for_frontend.json schreiben.
 Berechnet aus der preprocessed CSV (frontend_data/load_consumption_*_preprocessed.csv):
 - total_grid_load_kwh   – Summe grid_load_kwh (Total Grid Load, kWh)
 - pv_generation_kwh    – Summe pv_load_kwh (PV Gen, kWh)
-- peak_grid_load_kwh   – Max grid_load_kwh (Peak grid load, kWh)
-- usage_hours_h        – total_grid_load_kwh / peak_grid_load_kwh (Vollbenutzungsstunden, h)
+- peak_grid_load_kw    – Max grid_load_kwh × 4 (Peak grid load in kW; ×4 weil 15-min Intervalle)
+- usage_hours_h        – total_grid_load_kwh / peak_grid_load_kw (Vollbenutzungsstunden, h)
 - estimated_consumption_kwh – Summe consumption (consumption_kwh / consumption_load_kwh)
 
 Außerdem:
@@ -39,8 +39,10 @@ def compute_summaries(csv_path: Path) -> dict:
     if "grid_load_kwh" not in df.columns:
         raise ValueError(f"CSV braucht Spalte grid_load_kwh. Gefunden: {list(df.columns)}")
     total_grid_load_kwh = float(df["grid_load_kwh"].sum())
-    peak_grid_load_kwh = float(df["grid_load_kwh"].max())
-    usage_hours_h = total_grid_load_kwh / peak_grid_load_kwh if peak_grid_load_kwh > 0 else None
+    # Peak in kW: kWh × 4 (weil 15-min Intervalle: kWh/0.25h = kW)
+    peak_grid_load_kw = float(df["grid_load_kwh"].max()) * 4
+    # Usage hours basierend auf peak_grid_load_kw
+    usage_hours_h = total_grid_load_kwh / peak_grid_load_kw if peak_grid_load_kw > 0 else None
 
     pv_col = "pv_load_kwh" if "pv_load_kwh" in df.columns else None
     pv_generation_kwh = float(df[pv_col].sum()) if pv_col else None
@@ -51,10 +53,42 @@ def compute_summaries(csv_path: Path) -> dict:
     return {
         "total_grid_load_kwh": round(total_grid_load_kwh, 2),
         "pv_generation_kwh": round(pv_generation_kwh, 2) if pv_generation_kwh is not None else None,
-        "peak_grid_load_kwh": round(peak_grid_load_kwh, 2),
+        "peak_grid_load_kw": round(peak_grid_load_kw, 2),
         "usage_hours_h": round(usage_hours_h, 2) if usage_hours_h is not None else None,
         "estimated_consumption_kwh": round(estimated_consumption_kwh, 2) if estimated_consumption_kwh is not None else None,
     }
+
+
+def generate_warnings(summaries: dict, predictions: dict) -> str:
+    """Generiert kurze Warnhinweise basierend auf den Daten."""
+    warnings = []
+    
+    # Verbrauch in GWh
+    consumption_kwh = summaries.get("estimated_consumption_kwh") or summaries.get("total_grid_load_kwh") or 0
+    consumption_gwh = consumption_kwh / 1_000_000
+    
+    # Warnung bei großem Verbrauch (> 10 GWh)
+    if consumption_gwh > 10:
+        warnings.append(
+            f"Großverbraucher ({consumption_gwh:.0f} GWh): Schätzung der Netzentgeltreduktion mit höherer Unsicherheit."
+        )
+    
+    # Usage Hours
+    usage_hours = summaries.get("usage_hours_h") or 0
+    
+    # Spitzenlast (< 2000 h)
+    if usage_hours > 0 and usage_hours < 2000:
+        warnings.append(
+            f"Spitzenlastprofil ({usage_hours:.0f} h): Peak-Shaving-Potenzial könnte höher sein."
+        )
+    
+    # Bandlast (> 6000 h)
+    if usage_hours > 6000:
+        warnings.append(
+            f"Bandlastprofil ({usage_hours:.0f} h): Peak-Shaving-Potenzial typischerweise geringer."
+        )
+    
+    return " | ".join(warnings) if warnings else ""
 
 
 def main():
@@ -72,9 +106,8 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     summaries = compute_summaries(csv_path)
-    # warning_message: Platzhalter – Abhängigkeit gibst du später an
-    warning_message = ""
-
+    
+    # Lade bestehende Predictions (falls vorhanden)
     existing = {}
     if out_path.exists():
         try:
@@ -82,13 +115,16 @@ def main():
                 existing = json.load(f)
         except (json.JSONDecodeError, OSError):
             pass
+    
+    # Generiere Warnhinweise basierend auf Summaries und Predictions
+    warning_message = generate_warnings(summaries, existing)
 
     merged = {**existing, **summaries, "warning_message": warning_message}
     with open(out_path, "w") as f:
         json.dump(merged, f, indent=2)
 
     print(f"Summary-Werte + warning_message geschrieben: {out_path}")
-    print(f"  total_grid_load_kwh={merged.get('total_grid_load_kwh')}, peak_grid_load_kwh={merged.get('peak_grid_load_kwh')}, usage_hours_h={merged.get('usage_hours_h')}")
+    print(f"  total_grid_load_kwh={merged.get('total_grid_load_kwh')}, peak_grid_load_kw={merged.get('peak_grid_load_kw')}, usage_hours_h={merged.get('usage_hours_h')}")
     print(f"  pv_generation_kwh={merged.get('pv_generation_kwh')}, estimated_consumption_kwh={merged.get('estimated_consumption_kwh')}")
     print(f"  warning_message={repr(merged.get('warning_message'))}")
 

@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """
-Predict benefit buckets with current trained models (no retraining).
-====================================================================
+Hierarchical prediction of benefit buckets.
+============================================
 
-Uses existing coefficients from 2_ml/artifacts/models/ (or 3_prediction/models/):
-- peak_shaving_benefit_model.joblib
-- energy_procurement_optimization_model.joblib
-- trading_revenue_model.joblib
+Uses hierarchical models where predictions from earlier models become features for later ones:
+1. trading_revenue: base_features only
+2. energy_procurement_optimization: base_features + pred_trading_revenue
+3. peak_shaving_benefit: base_features + pred_trading_revenue + pred_energy_procurement_optimization
 
-Feature order is taken from registry.json (feature_importance keys = training column order).
-Reads working_data/features.json (from calculate_features.py), builds X in that order,
-imputes missing values (0), predicts each target, writes frontend_data/outputs_for_frontend.json.
+Models and feature order from 3_prediction/models/registry.json.
+Reads working_data/features.json (from calculate_features.py).
+Writes frontend_data/outputs_for_frontend.json.
 
 Usage (from DB root or 3_prediction):
-  python 3_prediction/calculate_features.py   # once: build features from frontend_data
-  python 3_prediction/predict_buckets.py       # predict and write outputs_for_frontend.json
-  python 3_prediction/predict_buckets.py --debug   # same + write prediction_debug.json
+  python 3_prediction/preprocess_load_and_pv.py   # once: preprocess raw data
+  python 3_prediction/calculate_features.py       # once: build features from frontend_data
+  python 3_prediction/predict_buckets.py          # predict and write outputs_for_frontend.json
+  python 3_prediction/predict_buckets.py --debug  # same + write prediction_debug.json
 """
 from pathlib import Path
 import argparse
@@ -28,23 +29,16 @@ import pandas as pd
 SCRIPT_DIR = Path(__file__).resolve().parent
 DB_ROOT = SCRIPT_DIR.parent
 
-# Models: prefer 3_prediction/models (if you copied them), else 2_ml/artifacts/models
-MODELS_DIR = SCRIPT_DIR / "models" if (SCRIPT_DIR / "models" / "registry.json").exists() else DB_ROOT / "2_ml" / "artifacts" / "models"
+MODELS_DIR = SCRIPT_DIR / "models"
 WORKING_FEATURES = SCRIPT_DIR / "working_data" / "features.json"
 OUTPUT_JSON = SCRIPT_DIR / "frontend_data" / "outputs_for_frontend.json"
 DEBUG_JSON = SCRIPT_DIR / "frontend_data" / "prediction_debug.json"
 
-TARGETS = ["peak_shaving_benefit", "energy_procurement_optimization", "trading_revenue"]
 
-
-def get_feature_columns(registry_path: Path) -> list[str]:
-    """Feature order = keys of feature_importance from registry (same as training X.columns)."""
+def load_registry(registry_path: Path) -> dict:
+    """Load model registry with feature order and model metadata."""
     with open(registry_path, "r") as f:
-        registry = json.load(f)
-    for name in TARGETS:
-        if name in registry and "feature_importance" in registry[name]:
-            return list(registry[name]["feature_importance"].keys())
-    return []
+        return json.load(f)
 
 
 def load_features_json(path: Path) -> dict:
@@ -52,192 +46,262 @@ def load_features_json(path: Path) -> dict:
         return json.load(f)
 
 
-def build_X(features_dict: dict, feature_columns: list[str]):
+def build_feature_vector(
+    features_dict: dict,
+    base_features: list[str],
+    predictions_so_far: dict[str, float],
+    target_name: str,
+    model_order: list[str],
+) -> tuple[pd.DataFrame, list[dict]]:
     """
-    One row, same order as training. Fehlende Werte bleiben „leer“ (werden nur fürs Modell mit 0 gefüllt).
-    Returns (X_df, row_debug): X_df für sklearn, row_debug mit source "from_features" | "imputed"
-    (imputed = war leer in features.json).
+    Build feature vector for a specific target model.
+    
+    For hierarchical models:
+    - trading_revenue: only base_features
+    - energy_procurement_optimization: base_features + pred_trading_revenue
+    - peak_shaving_benefit: base_features + pred_trading_revenue + pred_energy_procurement_optimization
     """
+    # Start with base features
+    feature_columns = list(base_features)
+    
+    # Add prediction features from earlier models in the hierarchy
+    target_idx = model_order.index(target_name)
+    for i in range(target_idx):
+        prev_target = model_order[i]
+        pred_feature_name = f"pred_{prev_target}"
+        feature_columns.append(pred_feature_name)
+    
+    # Build the row
     row = []
     row_debug = []
+    
     for col in feature_columns:
-        v = features_dict.get(col)
-        if v is None or (isinstance(v, float) and np.isnan(v)):
-            row.append(np.nan)
-            row_debug.append({"name": col, "value": 0.0, "source": "imputed", "value_in_features": None})
+        # Check if it's a prediction feature
+        if col.startswith("pred_"):
+            pred_target = col[5:]  # Remove "pred_" prefix
+            v = predictions_so_far.get(pred_target)
+            if v is not None:
+                row.append(float(v))
+                row_debug.append({
+                    "name": col,
+                    "value": float(v),
+                    "source": "predicted",
+                    "value_in_features": float(v)
+                })
+            else:
+                row.append(0.0)
+                row_debug.append({
+                    "name": col,
+                    "value": 0.0,
+                    "source": "missing_prediction",
+                    "value_in_features": None
+                })
         else:
-            try:
-                x = float(v)
-                row.append(x)
-                row_debug.append({"name": col, "value": x, "source": "from_features", "value_in_features": x})
-            except (TypeError, ValueError):
-                row.append(np.nan)
-                row_debug.append({"name": col, "value": 0.0, "source": "imputed", "value_in_features": None})
+            # Regular feature from features.json
+            v = features_dict.get(col)
+            if v is None or (isinstance(v, float) and np.isnan(v)):
+                row.append(0.0)
+                row_debug.append({
+                    "name": col,
+                    "value": 0.0,
+                    "source": "imputed",
+                    "value_in_features": None
+                })
+            else:
+                try:
+                    x = float(v)
+                    row.append(x)
+                    row_debug.append({
+                        "name": col,
+                        "value": x,
+                        "source": "from_features",
+                        "value_in_features": x
+                    })
+                except (TypeError, ValueError):
+                    row.append(0.0)
+                    row_debug.append({
+                        "name": col,
+                        "value": 0.0,
+                        "source": "imputed",
+                        "value_in_features": None
+                    })
+    
     arr = np.array([row], dtype=np.float64)
-    arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
-    for i, d in enumerate(row_debug):
-        d["value"] = float(arr[0, i])
     X_df = pd.DataFrame(arr, columns=feature_columns)
     return X_df, row_debug
 
 
-def build_debug(
+def predict_hierarchical(
+    features_dict: dict,
     registry: dict,
-    feature_columns: list[str],
-    row_debug: list[dict],
-    predictions: dict,
     models_dir: Path,
-) -> dict:
-    """Build debug payload: feature count, source, importance per target, top features."""
-    n_total = len(feature_columns)
-    n_from_features = sum(1 for d in row_debug if d["source"] == "from_features")
-    n_imputed = n_total - n_from_features
-
-    empty_feature_names = [d["name"] for d in row_debug if d["source"] == "imputed"]
-    # Per-feature: value, source, importance; bei imputed: value_in_features = null (leer)
-    features_detail = []
-    for d in row_debug:
-        name = d["name"]
-        rec = {
-            "name": name,
-            "value_used": d["value"],
-            "source": d["source"],
-            "was_empty": d["source"] == "imputed",
-            "value_in_features": d.get("value_in_features"),
-        }
-        for target in TARGETS:
-            if target in registry and "feature_importance" in registry[target]:
-                imp = registry[target]["feature_importance"].get(name)
-                rec[f"importance_{target}"] = round(float(imp), 6) if imp is not None else None
-        features_detail.append(rec)
-
-    # Top N by importance per target (for quick read)
-    top_n = 15
-    top_per_target = {}
-    for target in TARGETS:
-        if target not in registry or "feature_importance" not in registry[target]:
-            continue
-        imp = registry[target]["feature_importance"]
-        sorted_names = sorted(imp.keys(), key=lambda k: imp[k], reverse=True)
-        top_per_target[target] = [
-            {
-                "rank": i + 1,
-                "name": name,
-                "importance": round(imp[name], 6),
-                "value_used": next((d["value"] for d in row_debug if d["name"] == name), None),
-                "source": next((d["source"] for d in row_debug if d["name"] == name), None),
-            }
-            for i, name in enumerate(sorted_names[:top_n])
-        ]
-
-    return {
-        "summary": {
-            "n_features_used": n_total,
-            "n_from_features_json": n_from_features,
-            "n_imputed": n_imputed,
-            "features_json_path": str(WORKING_FEATURES),
-            "models_dir": str(models_dir),
-        },
-        "empty_feature_names": empty_feature_names,
-        "predictions": predictions,
-        "features_detail": features_detail,
-        "top_features_per_target": top_per_target,
-    }
-
-
-def print_debug_to_terminal(debug_payload: dict) -> None:
-    """Print debug summary and top features per target to terminal."""
-    s = debug_payload["summary"]
-    print()
-    print("--- Debug ---")
-    print(f"Features: {s['n_features_used']} total  |  from features.json: {s['n_from_features_json']}  |  imputed: {s['n_imputed']}")
-    print(f"features.json: {s['features_json_path']}")
-    print(f"models: {s['models_dir']}")
-    print()
-    print("Predictions:")
-    for k, v in debug_payload["predictions"].items():
-        print(f"  {k}: {v}")
-    top = debug_payload.get("top_features_per_target", {})
-    for target in TARGETS:
-        if target not in top:
-            continue
-        print()
-        print(f"--- Top features for {target} (by importance) ---")
-        for r in top[target]:
-            val = r["value_used"]
-            val_str = f"{val:.4g}" if isinstance(val, (int, float)) else str(val)
-            print(f"  #{r['rank']:2}  importance={r['importance']:.4f}  value={val_str:>12}  [{r['source']:12}]  {r['name']}")
-    empty = debug_payload.get("empty_feature_names", [])
-    if empty:
-        print()
-        print("--- Leere / fehlende Features (im Modell mit 0 gefüllt, damit es läuft) ---")
-        print("  Diese Werte standen in features.json nicht bzw. waren null:")
-        for name in empty:
-            print(f"    • {name}")
-    print()
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Predict benefit buckets from features.json")
-    parser.add_argument("--features", default=None, help="Path to features.json (default: working_data/features.json)")
-    parser.add_argument("--output", default=None, help="Path for predictions JSON (default: frontend_data/outputs_for_frontend.json)")
-    parser.add_argument("--debug", action="store_true", help="Write prediction_debug.json with feature usage and importance")
-    parser.add_argument("--debug-out", default=None, help="Path for debug JSON (default: frontend_data/prediction_debug.json)")
-    args = parser.parse_args()
-
-    features_path = Path(args.features) if args.features else WORKING_FEATURES
-    output_path = Path(args.output) if args.output else OUTPUT_JSON
-
-    registry_path = MODELS_DIR / "registry.json"
-    if not registry_path.exists():
-        print(f"Registry not found: {registry_path}")
-        print("Train models first: python 2_ml/3_train_models.py")
-        sys.exit(1)
-
-    if not features_path.exists():
-        print(f"Features not found: {features_path}")
-        print("Run first: python 3_prediction/calculate_features.py")
-        sys.exit(1)
-
-    with open(registry_path, "r") as f:
-        registry = json.load(f)
-    feature_columns = get_feature_columns(registry_path)
-    if not feature_columns:
-        print("Could not read feature order from registry.")
-        sys.exit(1)
-
-    features_dict = load_features_json(features_path)
-    X_df, row_debug = build_X(features_dict, feature_columns)
-
+) -> tuple[dict[str, float], dict[str, list[dict]]]:
+    """
+    Make predictions in hierarchical order.
+    Returns (predictions, debug_per_target).
+    """
     try:
         import joblib
     except ImportError:
         print("joblib required: pip install joblib")
         sys.exit(1)
-
+    
+    model_order = registry.get("model_order", [
+        "trading_revenue",
+        "energy_procurement_optimization",
+        "peak_shaving_benefit"
+    ])
+    base_features = registry.get("base_features", [])
+    
     predictions = {}
-    for target in TARGETS:
-        model_path = MODELS_DIR / f"{target}_model.joblib"
+    debug_per_target = {}
+    
+    for target in model_order:
+        model_path = models_dir / f"{target}_model.joblib"
         if not model_path.exists():
-            print(f"Model not found: {model_path}")
+            print(f"Warning: Model not found: {model_path}")
             predictions[target] = None
             continue
+        
+        # Build feature vector for this target
+        X_df, row_debug = build_feature_vector(
+            features_dict,
+            base_features,
+            predictions,  # predictions so far
+            target,
+            model_order
+        )
+        
+        # Load model and predict
         model = joblib.load(model_path)
         pred = model.predict(X_df)
         predictions[target] = float(pred[0])
+        debug_per_target[target] = row_debug
+        
+        print(f"  {target}: {predictions[target]:,.2f} € (using {len(X_df.columns)} features)")
+    
+    return predictions, debug_per_target
 
+
+def build_debug_payload(
+    registry: dict,
+    predictions: dict,
+    debug_per_target: dict[str, list[dict]],
+    models_dir: Path,
+) -> dict:
+    """Build comprehensive debug payload."""
+    model_order = registry.get("model_order", [])
+    
+    # Summary per target
+    targets_summary = {}
+    for target in model_order:
+        if target not in debug_per_target:
+            continue
+        row_debug = debug_per_target[target]
+        n_total = len(row_debug)
+        n_from_features = sum(1 for d in row_debug if d["source"] == "from_features")
+        n_predicted = sum(1 for d in row_debug if d["source"] == "predicted")
+        n_imputed = sum(1 for d in row_debug if d["source"] == "imputed")
+        
+        targets_summary[target] = {
+            "prediction": predictions.get(target),
+            "n_features": n_total,
+            "n_from_features_json": n_from_features,
+            "n_from_predictions": n_predicted,
+            "n_imputed": n_imputed,
+            "features_used": row_debug,
+        }
+    
+    # Model performance from registry
+    results = registry.get("results", {})
+    
+    return {
+        "summary": {
+            "model_type": registry.get("model_type", "unknown"),
+            "model_order": model_order,
+            "training_date": registry.get("training_date"),
+            "models_dir": str(models_dir),
+        },
+        "predictions": predictions,
+        "model_performance": {
+            target: {
+                "cv_r2": results.get(target, {}).get("cv_r2"),
+                "test_r2": results.get(target, {}).get("test_r2"),
+                "mae": results.get(target, {}).get("mae"),
+            }
+            for target in model_order
+        },
+        "targets_detail": targets_summary,
+    }
+
+
+def print_summary(predictions: dict, registry: dict) -> None:
+    """Print prediction summary to terminal."""
+    print("\n" + "=" * 60)
+    print("HIERARCHICAL PREDICTIONS")
+    print("=" * 60)
+    
+    results = registry.get("results", {})
+    model_order = registry.get("model_order", [])
+    
+    print(f"\n{'Target':<45} {'Prediction':>15} {'MAE (Train)':>12}")
+    print("-" * 72)
+    
+    total = 0
+    for target in model_order:
+        pred = predictions.get(target)
+        mae = results.get(target, {}).get("mae", 0)
+        if pred is not None:
+            print(f"{target:<45} {pred:>15,.2f} € {mae:>10,.0f} €")
+            total += pred
+        else:
+            print(f"{target:<45} {'N/A':>15} {mae:>10,.0f} €")
+    
+    print("-" * 72)
+    print(f"{'TOTAL BENEFIT':<45} {total:>15,.2f} €")
+    print()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Hierarchical prediction of benefit buckets")
+    parser.add_argument("--features", default=None, help="Path to features.json")
+    parser.add_argument("--output", default=None, help="Path for predictions JSON")
+    parser.add_argument("--debug", action="store_true", help="Write prediction_debug.json")
+    parser.add_argument("--debug-out", default=None, help="Path for debug JSON")
+    args = parser.parse_args()
+    
+    features_path = Path(args.features) if args.features else WORKING_FEATURES
+    output_path = Path(args.output) if args.output else OUTPUT_JSON
+    
+    registry_path = MODELS_DIR / "registry.json"
+    if not registry_path.exists():
+        print(f"Registry not found: {registry_path}")
+        print("Train models first or copy them to 3_prediction/models/")
+        sys.exit(1)
+    
+    if not features_path.exists():
+        print(f"Features not found: {features_path}")
+        print("Run first: python 3_prediction/calculate_features.py")
+        sys.exit(1)
+    
+    registry = load_registry(registry_path)
+    features_dict = load_features_json(features_path)
+    
+    print("\nPredicting in hierarchical order...")
+    predictions, debug_per_target = predict_hierarchical(features_dict, registry, MODELS_DIR)
+    
+    # Write predictions
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:
         json.dump(predictions, f, indent=2)
-
-    # Always build and print full debug to terminal
-    debug_payload = build_debug(registry, feature_columns, row_debug, predictions, MODELS_DIR)
-    print_debug_to_terminal(debug_payload)
-
+    
+    print_summary(predictions, registry)
     print(f"Predictions written to {output_path}")
-
+    
+    # Write debug if requested
     if args.debug:
-        debug_out = Path(args.debug_out) if args.debug_out else (output_path.parent / "prediction_debug.json")
+        debug_payload = build_debug_payload(registry, predictions, debug_per_target, MODELS_DIR)
+        debug_out = Path(args.debug_out) if args.debug_out else DEBUG_JSON
         debug_out.parent.mkdir(parents=True, exist_ok=True)
         with open(debug_out, "w", encoding="utf-8") as f:
             json.dump(debug_payload, f, indent=2, ensure_ascii=False)

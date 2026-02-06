@@ -51,7 +51,7 @@ export const WeeklyHighResChart = ({data, headerChartData}: {
                             <p className="text-xs font-medium text-gray-500">Spitzenlast</p>
                             <p className="mt-1 text-xl font-bold text-gray-900">
                                 {formatNumber(peak_grid_load_kw)} <span
-                                className="text-sm font-semibold text-gray-500">kWh</span>
+                                className="text-sm font-semibold text-gray-500">kW</span>
                             </p>
                         </div>
 
@@ -160,13 +160,13 @@ export const WeeklyHighResChart = ({data, headerChartData}: {
                                                 <div className="flex justify-between space-x-4 mb-1">
                                                     <span className="text-gray-400">Netz:</span>
                                                     <span
-                                                        className="text-emerald-400 font-bold">{d.value.toFixed(2)} kW</span>
+                                                        className="text-emerald-400 font-bold">{d.value.toFixed(2)} kWh</span>
                                                 </div>
                                                 {d.pv > 0 && (
                                                     <div className="flex justify-between space-x-4">
                                                         <span className="text-gray-400">PV:</span>
                                                         <span
-                                                            className="text-orange-400 font-bold">{d.pv.toFixed(2)} kW</span>
+                                                            className="text-orange-400 font-bold">{d.pv.toFixed(2)} kWh</span>
                                                     </div>
                                                 )}
                                             </div>

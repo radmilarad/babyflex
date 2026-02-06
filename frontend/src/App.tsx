@@ -86,7 +86,7 @@ const App = () => {
              style={{ backgroundImage: `url(${backgroundImage})` }}>
 
             <div className="pt-16 text-center">
-                <h1 className="text-5xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-gray-300 tracking-tight mb-4">
+                <h1 className="text-lg sm:text-2xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-gray-300 tracking-tight mb-4">
                     trawa Potenzialindikations-Rechner
                 </h1>
                 <p className="text-xl text-gray-100 font-medium">Individuelle Ersteinschätzung in wenigen Klicks</p>

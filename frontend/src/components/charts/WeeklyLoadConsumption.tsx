@@ -96,7 +96,7 @@ export const WeeklyHighResChart = ({data, headerChartData}: {
                     <div className="flex items-center space-x-4 text-xs font-medium">
                         <div className="flex items-center">
                             <span className="w-3 h-3 rounded-full bg-emerald-500 mr-2"></span>
-                            <span className="text-gray-600">Netzbezug</span>
+                            <span className="text-gray-600">Verbrauch</span>
                         </div>
                         <div className="flex items-center">
                             <span className="w-3 h-3 rounded-full bg-orange-500 mr-2"></span>
@@ -158,7 +158,7 @@ export const WeeklyHighResChart = ({data, headerChartData}: {
                                                     {d.day} • {d.time} Uhr
                                                 </div>
                                                 <div className="flex justify-between space-x-4 mb-1">
-                                                    <span className="text-gray-400">Netz:</span>
+                                                    <span className="text-gray-400">Verbrauch:</span>
                                                     <span
                                                         className="text-emerald-400 font-bold">{d.value.toFixed(2)} kWh</span>
                                                 </div>
